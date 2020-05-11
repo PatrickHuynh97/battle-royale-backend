@@ -1,0 +1,41 @@
+signUp:
+    handler: handlers.authorization_handlers.sign_up_handler
+    events:
+      - http:
+          path: /user_management/sign_up
+          method: post
+    environment:
+      USER_POOL_CLIENT_ID:
+        Ref: CognitoUserPoolClient
+      USER_POOL_ID:
+        Ref: CognitoUserPool
+      TABLE:
+        Fn::GetAtt: [BattleRoyaleTable, Arn]
+
+signIn:
+  handler: handlers.authorization_handlers.sign_in_handler
+  events:
+    - http:
+        path: /user_management/sign_in
+        method: post
+  environment:
+    USER_POOL_CLIENT_ID:
+      Ref: CognitoUserPoolClient
+    USER_POOL_ID:
+      Ref: CognitoUserPool
+
+signOut:
+  handler: handlers.authorization_handlers.sign_out_handler
+  events:
+    - http:
+        path: /user_management/sign_out
+        method: post
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId:
+            Ref: ApiGatewayAuthorizer
+  environment:
+    USER_POOL_CLIENT_ID:
+      Ref: CognitoUserPoolClient
+    USER_POOL_ID:
+      Ref: CognitoUserPool

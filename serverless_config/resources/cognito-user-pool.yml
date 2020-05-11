@@ -1,0 +1,32 @@
+Resources:
+  # User pool
+  CognitoUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: ${opt:stage}-user-pool
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 6
+      EmailConfiguration:
+        EmailSendingAccount: COGNITO_DEFAULT
+  # Client
+  CognitoUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: ${opt:stage}-user-pool
+      UserPoolId:
+        Ref: CognitoUserPool
+      ExplicitAuthFlows:
+        - USER_PASSWORD_AUTH
+  # Authorizer that can be used for API gateway
+  ApiGatewayAuthorizer:
+    Type: AWS::ApiGateway::Authorizer
+    Properties:
+      Name: CognitoUserPool
+      Type: COGNITO_USER_POOLS
+      IdentitySource: method.request.header.Authorization
+      # Retrieved from console. Needs to be updated if stack is overwritten/replaced
+      RestApiId:
+        Ref: ApiGatewayRestApi
+      ProviderARNs:
+        - Fn::GetAtt: [CognitoUserPool, Arn]

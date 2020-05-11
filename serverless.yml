@@ -1,0 +1,47 @@
+custom:
+  project:
+    name: battle-royale
+
+service:
+  name: api-service
+
+provider:
+  name: aws
+  runtime: ${opt:runtime, 'python3.7'}
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'eu-central-1'}
+  profile: ${opt:profile, 'default'}
+  deploymentBucket:
+    name: ${self:custom.project.name}-dev
+  versionFunctions: false
+  stackTags:
+    # Tag all resources that can be tagged e.g. lambdas, DynamoDB tables, ec2, etc.
+    SERVICE:  ${self:service.name}
+    PROJECT: ${self:custom.project.name}
+
+  iamRoleStatements:
+    - Effect: Allow  # God mode lambda
+      Action: "*"
+      Resource: "*"
+
+functions:
+  - ${file(serverless_config/functions/authorization-functions.yml)}
+  - ${file(serverless_config/functions/user-functions.yml)}
+  - ${file(serverless_config/functions/player-functions.yml)}
+
+package:
+  include:
+    - 'api/*'
+    - 'db/*'
+    - 'models/*'
+    - 'user_management/*'
+    - 'serverless_config/*'
+    - 'handlers/*'
+  exclude:
+    - 'node_modules'
+plugins:
+  - serverless-python-requirements
+
+resources:
+  - ${file(serverless_config/resources/dynamo-db.yml)}
+  - ${file(serverless_config/resources/cognito-user-pool.yml)}

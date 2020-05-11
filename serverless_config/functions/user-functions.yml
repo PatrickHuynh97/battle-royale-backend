@@ -1,0 +1,17 @@
+deleteUser:
+  handler: handlers.user_handlers.delete_user_handler
+  events:
+    - http:
+        path: /user_management/delete_user
+        method: post
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId:
+            Ref: ApiGatewayAuthorizer
+  environment:
+    USER_POOL_CLIENT_ID:
+      Ref: CognitoUserPoolClient
+    USER_POOL_ID:
+      Ref: CognitoUserPool
+    TABLE:
+      Fn::GetAtt: [BattleRoyaleTable, Arn]

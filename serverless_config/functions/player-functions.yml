@@ -1,0 +1,70 @@
+createSquad:
+  handler: handlers.player_handlers.create_squad_handler
+  events:
+    - http:
+        path: /player/{username}/squad/{squadname}/create
+        method: post
+        request:
+          parameters:
+            paths:
+              username: true
+              squadname: true
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId:
+            Ref: ApiGatewayAuthorizer
+  environment:
+    USER_POOL_CLIENT_ID:
+      Ref: CognitoUserPoolClient
+    USER_POOL_ID:
+      Ref: CognitoUserPool
+    TABLE:
+      Fn::GetAtt: [BattleRoyaleTable, Arn]
+
+
+deleteSquad:
+  handler: handlers.player_handlers.delete_squad_handler
+  events:
+    - http:
+        path: /player/{username}/squad/{squadname}/delete
+        method: post
+        request:
+          parameters:
+            paths:
+              username: true
+              squadname: true
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId:
+            Ref: ApiGatewayAuthorizer
+  environment:
+    USER_POOL_CLIENT_ID:
+      Ref: CognitoUserPoolClient
+    USER_POOL_ID:
+      Ref: CognitoUserPool
+    TABLE:
+      Fn::GetAtt: [BattleRoyaleTable, Arn]
+
+addUserToSquad:
+  handler: handlers.player_handlers.add_user_to_squad_handler
+  events:
+    - http:
+        path: /player/{username}/squad/{squadname}/add_member/{member}
+        request:
+          parameters:
+            paths:
+              username: true
+              squadname: true
+              member: true
+        method: post
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId:
+            Ref: ApiGatewayAuthorizer
+  environment:
+    USER_POOL_CLIENT_ID:
+      Ref: CognitoUserPoolClient
+    USER_POOL_ID:
+      Ref: CognitoUserPool
+    TABLE:
+      Fn::GetAtt: [BattleRoyaleTable, Arn]
