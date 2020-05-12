@@ -22,12 +22,19 @@ class ApiException(Exception):
         super(ApiException, self).__init__(json.dumps(message_dict))
 
 
+# 500
+class InternalException(ApiException):
+    error_code = 500
+    tag = "InternalError"
+
+
 class AuthorizationException(ApiException):
-    tag = "UserException"
+    tag = "AuthorizationException"
     error_code = 500
 
 
 class SignUpException(AuthorizationException):
+    tag = __qualname__
     error_code = 400
 
 
@@ -41,12 +48,11 @@ class SignOutException(AuthorizationException):
 
 class UserDoesNotExistException(AuthorizationException):
     error_code = 400
-    pass
 
 
 class UserAlreadyExistsException(AuthorizationException):
+    tag = __qualname__
     error_code = 400
-    pass
 
 
 # exceptions for players
@@ -56,18 +62,18 @@ class PlayerException(ApiException):
 
 
 class UserCannotBeDeletedException(PlayerException):
+    tag = __qualname__
     error_code = 400
-    pass
 
 
 class UserDoesNotOwnSquadException(PlayerException):
+    tag = __qualname__
     error_code = 400
-    pass
 
 
-class SquadAlreadyExistsException(PlayerException):
+class UserOwnsSquadException(PlayerException):
+    tag = __qualname__
     error_code = 400
-    pass
 
 
 # exceptions for Squads
@@ -76,16 +82,16 @@ class SquadException(ApiException):
     error_code = 500
 
 
-class SquadDoesNotExistException(SquadException):
-    error_code = 400
-    pass
-
-
 class SquadAlreadyExistsException(SquadException):
+    tag = __qualname__
     error_code = 400
-    pass
+
+
+class SquadDoesNotExistException(SquadException):
+    tag = __qualname__
+    error_code = 400
 
 
 class UserAlreadyMemberException(SquadException):
+    tag = __qualname__
     error_code = 400
-    pass

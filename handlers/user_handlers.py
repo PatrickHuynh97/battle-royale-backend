@@ -2,11 +2,11 @@ import json
 
 from handlers.lambda_helpers import endpoint
 from exceptions import UserCannotBeDeletedException
-from models.player import PlayerModel
+from models.player import Player
 from jwt import verify_token
 
 
-@endpoint
+@endpoint()
 def delete_user_handler(event, context):
     """
     Handler for deleting a user. Username and ID token must be provided.
@@ -21,4 +21,4 @@ def delete_user_handler(event, context):
     if not claims:
         raise UserCannotBeDeletedException("Invalid Access Token")
 
-    PlayerModel(claims['username']).delete_player(access_token=access_token)
+    Player(claims['username']).delete(access_token=access_token)

@@ -52,6 +52,10 @@ class TestWithMockAWSServices(unittest.TestCase):
                     'AttributeName': 'lsi',
                     'AttributeType': 'S'
                 },
+                {
+                    'AttributeName': 'lsi-2',
+                    'AttributeType': 'S'
+                },
             ],
             LocalSecondaryIndexes=[
                 {
@@ -63,6 +67,22 @@ class TestWithMockAWSServices(unittest.TestCase):
                         },
                         {
                             'AttributeName': 'lsi',
+                            'KeyType': 'RANGE'
+                        }
+                    ],
+                    'Projection': {
+                        'ProjectionType': 'ALL'
+                    }
+                },
+                {
+                    'IndexName': 'lsi-2',
+                    'KeySchema': [
+                        {
+                            'AttributeName': 'pk',
+                            'KeyType': 'HASH'
+                        },
+                        {
+                            'AttributeName': 'lsi-2',
                             'KeyType': 'RANGE'
                         }
                     ],

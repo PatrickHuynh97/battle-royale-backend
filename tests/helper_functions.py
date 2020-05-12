@@ -1,13 +1,16 @@
 import json
 
+from models.player import Player
 
-def make_lambda_proxy_integration_event(path_params, body, headers=None):
+
+def make_api_gateway_event(calling_user=None, path_params={}, body={}, headers=None):
     """
-    Helper function to create API Gateway event.
+    Helper function to create fake API Gateway event.
+    :param calling_user: User making the request.
     :param path_params: Dict of path parameters
     :param body: Dict of data
     :param headers: Dict of headers
-    :return: An API Gateway event
+    :return: An API Gateway event and context
     """
 
     if headers is None:
@@ -15,31 +18,16 @@ def make_lambda_proxy_integration_event(path_params, body, headers=None):
     return {
         'headers': headers,
         'pathParameters': path_params,
-        'body': body
-    }
+        'body': json.dumps(body),
+        'requestContext': {'authorizer': {'claims': {'cognito:username': calling_user.username}}}
+        if calling_user else {}
+    }, None
 
 
-class MockResource(object):
-    """
-    Mocks the boto3 resource object. The type of resource object returned depends on parameter, so this class holds
-    functionality from different microservices, e.g. send_message from SQS and Object class from S3.
-    """
-    class Object:
-        def __init__(self, bucket_name, new_fw_version):
-            pass
-
-        def load(self):
-            return
-
-    def __init__(self, resource):
-        self.resource = resource
-        self.message = None
-
-    def get_queue_by_name(self, QueueName):
-        return self
-
-    def send_message(self, MessageBody):
-        self.message = json.loads(MessageBody)
-
-    def load(self):
-        return None
+def create_test_players(usernames: list):
+    players = []
+    for username in usernames:
+        player = Player(username)
+        player.put()
+        players.append(player)
+    return players

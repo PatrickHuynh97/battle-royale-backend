@@ -2,9 +2,10 @@ from boto3.dynamodb.conditions import Key
 
 from db.dynamodb_connector import DynamoDbConnector
 from exceptions import SquadDoesNotExistException, SquadAlreadyExistsException, UserAlreadyMemberException
+from models import player
 
 
-class SquadModel:
+class Squad:
     """
     A Squad consisting of X members. Squad name's are unique.
     """
@@ -12,8 +13,16 @@ class SquadModel:
     def __init__(self, name: str, owner: str = None):
         self.name = name  # name of squad
         self.owner = owner  # owner of squad
-        self.members = None  # list of members in squad
+        self.members = []  # list of members in squad
         self.table = DynamoDbConnector.get_table()
+
+    def __eq__(self, other):
+        """
+        If a Player object has the same username as another Player object, they are the same Player
+        """
+        if isinstance(other, Squad):
+            return self.name == other.name
+        return False
 
     def put(self, owner):
         """
@@ -36,9 +45,10 @@ class SquadModel:
         Delete a squad and all squad-members from database
         :return: None
         """
-        client, table_name = DynamoDbConnector.get_client()
-        # delete squad-members from database
-        self.table
+        # remove squad members
+        for member in self.members:
+            self.delete_member(member)
+
         # delete squad from database
         self.table.delete_item(
             Key={
@@ -74,12 +84,29 @@ class SquadModel:
         if not squad:
             raise SquadDoesNotExistException("Squad with name {} does not exist".format(self.name))
 
-        self.owner = squad['lsi'].split('#')[1]  # owner of squad is the LSI value
+        self.owner = player.Player(squad['lsi'].split('#')[1])  # owner of squad is the LSI value
 
         return {
             'name': self.name,
             'owner': self.owner
         }
+
+    def get_members(self):
+        """
+        Get all members belonging to the squad and save to object
+        :return: Members belonging to the squad
+        """
+
+        response = self.table.query(
+            IndexName='lsi',
+            Select='ALL_ATTRIBUTES',
+            KeyConditionExpression=Key('pk').eq('squad-member') & Key('lsi').eq(f'SQUADNAME#{self.name}')
+        )
+
+        for member in response['Items']:
+            squad_member = player.Player(member['sk'].split('#')[3])
+            if squad_member not in self.members:
+                self.members.append(squad_member)
 
     def add_member(self, new_member):
         """
@@ -87,37 +114,23 @@ class SquadModel:
         :param new_member: PlayerModel object for player to add to squad
         :return: None
         """
-        members = self.get_members()
+        self.get_members()
 
-        if new_member.username in members:
-            raise UserAlreadyMemberException("User {} is already in squad {}".format(new_member, self.name))
+        for member in self.members:
+            if member.username == new_member.username:
+                raise UserAlreadyMemberException("User {} is already in squad {}".format(new_member, self.name))
 
+        # add member in database
         self.table.put_item(
             Item={
                 'pk': 'squad-member',
-                'sk': f'SQUADMEMBER#{new_member.username}',
-                'lsi': f'SQUADNAME#{self.name}'
+                'sk': f'SQUAD#{self.name}#MEMBER#{new_member.username}',
+                'lsi': f'SQUADNAME#{self.name}',
+                'lsi-2': new_member.username
             }
         )
 
-    def get_members(self):
-        """
-        Get all members belonging to the squad
-        :return: Members belonging to the squad
-        """
-        members = []
-
-        response = self.table.query(
-            Select='ALL_ATTRIBUTES',
-            KeyConditionExpression=Key('pk').eq('squad-member') & Key('lsi').eq(f'SQUADNAME#{self.name}')
-        )
-
-        for member in response['Items']:
-            members.append(member['sk'].split('#')[1])
-
-        self.members = members
-
-        return members
+        self.members.append(new_member)
 
     def delete_member(self, member_to_delete):
         """
@@ -125,4 +138,10 @@ class SquadModel:
         :param member_to_delete: Username of player to delete
         :return:
         """
-        # todo
+        res = self.table.delete_item(
+            Key={
+                'pk': 'squad-member',
+                'sk': f'SQUAD#{self.name}#MEMBER#{member_to_delete.username}',
+            }
+        )
+        self.members.remove(member_to_delete)

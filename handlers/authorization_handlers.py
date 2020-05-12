@@ -1,12 +1,12 @@
 import json
 
 from handlers.lambda_helpers import endpoint
-from models.player import PlayerModel
+from models import player
 from exceptions import UserAlreadyExistsException
 from models.user import User
 
 
-@endpoint
+@endpoint()
 def sign_up_handler(event, context):
     """
     Handler for signing up a user
@@ -15,19 +15,19 @@ def sign_up_handler(event, context):
     username = body['username']
 
     # ensure username is not already in use
-    if PlayerModel(username).exists():
-        raise UserAlreadyExistsException
+    if player.Player(username).exists():
+        raise UserAlreadyExistsException(f'User with username {username} already exists')
 
     res = User().sign_up(username=body['username'],
                          password=body['password'],
                          email=body['email'])
 
-    PlayerModel(username).put_player()
+    player.Player(username).put()
 
     return json.dumps(res)
 
 
-@endpoint
+@endpoint()
 def sign_in_handler(event, context):
     """
     Handler for signing in a user
@@ -39,7 +39,7 @@ def sign_in_handler(event, context):
     return json.dumps(result)
 
 
-@endpoint
+@endpoint()
 def sign_out_handler(event, context):
     """
     Handler for signing out a user

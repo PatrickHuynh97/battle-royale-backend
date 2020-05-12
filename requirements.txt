@@ -2,3 +2,5 @@ jose
 boto3
 botocore
 python-jose[cryptography]
+docker
+marshmallow
