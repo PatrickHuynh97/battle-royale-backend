@@ -8,7 +8,6 @@ createSquad:
           parameters:
             paths:
               username: true
-              squadname: true
         authorizer:
           type: COGNITO_USER_POOLS
           authorizerId:

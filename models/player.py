@@ -31,7 +31,7 @@ class Player(User):
         response = self.table.get_item(
             Key={
                 'pk': self.username,
-                'sk': 'PLAYER'
+                'sk': 'USER'
             },
         )
         player = response.get('Item')
@@ -60,10 +60,10 @@ class Player(User):
         :return: None
         """
 
-        _ = self.table.put_item(
+        self.table.put_item(
             Item={
                 'pk': self.username,
-                'sk': 'PLAYER',
+                'sk': 'USER',
             }
         )
 
@@ -81,7 +81,7 @@ class Player(User):
         self.table.delete_item(
             Key={
                 'pk': self.username,
-                'sk': 'PLAYER'
+                'sk': 'USER'
             },
         )
         # delete user from Cognito service

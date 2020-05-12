@@ -1,5 +1,6 @@
 import json
 
+from models.game_master import GameMaster
 from models.player import Player
 
 
@@ -31,3 +32,14 @@ def create_test_players(usernames: list):
         player.put()
         players.append(player)
     return players
+
+
+def create_test_game_masters(usernames: list):
+    game_masters = []
+    for username in usernames:
+        game_master = GameMaster(username)
+        game_master.put()
+        game_masters.append(game_master)
+    return game_masters
+
+

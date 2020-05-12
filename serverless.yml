@@ -10,7 +10,7 @@ provider:
   runtime: ${opt:runtime, 'python3.7'}
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'eu-central-1'}
-  profile: ${opt:profile, 'default'}
+  profile: ${opt:profile, 'personal'}
   deploymentBucket:
     name: ${self:custom.project.name}-dev
   versionFunctions: false

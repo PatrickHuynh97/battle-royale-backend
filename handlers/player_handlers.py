@@ -10,7 +10,7 @@ def create_squad_handler(event, context):
     Handler for creating a squad.
     """
     username = event['calling_user']
-    squad_name = event['pathParameters']['squadname']
+    squad_name = event['body']['name']
 
     Player(username).create_squad(squad_name=squad_name)
 
@@ -33,7 +33,7 @@ def add_user_to_squad_handler(event, context):
     """
     username = event['calling_user']
     squad_name = event['pathParameters']['squadname']
-    user_to_add = event['body']['member']
+    user_to_add = event['body']['username']
 
     Player(username).add_member_to_squad(squad=Squad(squad_name),
                                          new_member=Player(user_to_add))
@@ -46,7 +46,7 @@ def remove_member_from_squad_handler(event, context):
     """
     username = event['calling_user']
     squad_name = event['pathParameters']['squadname']
-    user_to_remove = event['body']['member']
+    user_to_remove = event['body']['username']
 
     Player(username).remove_member_from_squad(squad=Squad(squad_name),
                                               member_to_remove=Player(user_to_remove))

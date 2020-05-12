@@ -95,3 +95,14 @@ class SquadDoesNotExistException(SquadException):
 class UserAlreadyMemberException(SquadException):
     tag = __qualname__
     error_code = 400
+
+
+# exceptions for Lobbys
+class LobbyException(ApiException):
+    tag = "SquadException"
+    error_code = 500
+
+
+class LobbyDoesNotExistException(LobbyException):
+    tag = __qualname__
+    error_code = 400
