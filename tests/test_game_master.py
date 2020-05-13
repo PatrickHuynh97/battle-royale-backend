@@ -1,23 +1,24 @@
-import json
-from unittest import mock
-
-import botocore
-
-from exceptions import UserAlreadyExistsException, SquadAlreadyExistsException, UserOwnsSquadException, \
-    UserDoesNotOwnSquadException
-from handlers.authorization_handlers import sign_up_handler
+from exceptions import SquadAlreadyInLobbyException, SquadTooBigException, LobbyFullException, \
+    LobbyAlreadyStartedException, PlayerAlreadyInLobbyException
+from handlers import game_master_handlers
+from handlers.schemas import LobbySchema, LobbyPlayerListSchema
+from models.enums import LobbyState
 from models.game_master import GameMaster
 from models.player import Player
-from models.squad import Squad
-from tests.helper_functions import make_api_gateway_event, create_test_game_masters
+from tests.helper_functions import make_api_gateway_event, create_test_game_masters, create_test_players, \
+    create_test_squads
 from tests.mock_db import TestWithMockAWSServices
 
 
 class TestGameMaster(TestWithMockAWSServices):
 
     def setUp(self):
-        usernames = ['username-1', 'username-2', 'username-3']
-        self.game_master_1, self.game_master_2, self.game_master_3 = create_test_game_masters(usernames)
+        # create players, game masters and squads
+        game_master_usernames = ['gm-1', 'gm-2', 'gm-3']
+        player_usernames = ['player-1', 'player-2', 'player-3']
+        self.player_1, self.player_2, self.player_3 = create_test_players(player_usernames)
+        self.game_master_1, self.game_master_2, self.game_master_3 = create_test_game_masters(game_master_usernames)
+        self.squad_1, self.squad_2, self.squad_3 = create_test_squads([self.player_1, self.player_2, self.player_3])
 
     def test_game_master_exists(self):
         username = "test-user"
@@ -29,7 +30,7 @@ class TestGameMaster(TestWithMockAWSServices):
     def test_create_lobby(self):
         # test creating a game lobby
         lobby_name = 'test-lobby'
-        lobby = self.game_master_1.create_lobby(lobby_name)
+        lobby = self.game_master_1.create_lobby(lobby_name, size=20)
 
         self.assertTrue(lobby.exists())
 
@@ -38,20 +39,250 @@ class TestGameMaster(TestWithMockAWSServices):
         lobby_name = 'test-lobby'
         lobby_size = 20
         squad_size = 3
-        self.game_master_1.create_lobby(lobby_name, lobby_size=lobby_size, squad_size=squad_size)
+        self.game_master_1.create_lobby(lobby_name, size=lobby_size, squad_size=squad_size)
 
         lobby = self.game_master_1.get_lobby(lobby_name)
         self.assertEqual(self.game_master_1, lobby.owner)
-        self.assertEqual(lobby_size, lobby.lobby_size)
+        self.assertEqual(lobby_size, lobby.size)
         self.assertEqual(squad_size, lobby.squad_size)
+
+    def test_get_lobby_handler(self):
+        # test getting a lobby
+        lobby_name = 'test-lobby'
+        lobby_size = 20
+        squad_size = 3
+        self.game_master_1.create_lobby(lobby_name, size=lobby_size, squad_size=squad_size)
+        self.player_1.add_member_to_squad(self.squad_1, self.player_2)
+        self.game_master_1.add_squad_to_lobby(lobby_name, self.squad_1)
+
+        event, context = make_api_gateway_event(calling_user=self.game_master_1,
+                                                body={'name': lobby_name})
+        res = game_master_handlers.get_lobby_handler(event, context)
+        load = LobbySchema().loads(res['body'])
+
+        self.assertEqual(lobby_name, load['name'])
+        self.assertEqual(LobbyState.NOT_STARTED.value, load['state']),
+        self.assertEqual(lobby_size, load['size'])
+        self.assertEqual(self.game_master_1.username, load['owner'])
+        self.assertEqual(squad_size, load['squad_size'])
+
+        self.assertEqual(1, len(load['squads']))
+        self.assertEqual(self.squad_1.name, load['squads'][0]['name'])
 
     def test_delete_lobby(self):
         # create a lobby
         lobby_name = 'test-lobby'
-        lobby = self.game_master_1.create_lobby(lobby_name)
+        lobby = self.game_master_1.create_lobby(lobby_name, size=20)
 
         # assert it exists
         self.assertTrue(lobby.exists())
         lobby.delete()
 
         self.assertFalse(lobby.exists())
+
+    def test_add_squad_to_lobby(self):
+        # create a lobby
+        lobby_name = 'test-lobby'
+        lobby = self.game_master_1.create_lobby(lobby_name, size=20)
+
+        self.game_master_1.add_squad_to_lobby(lobby_name, self.squad_1)
+        lobby.get_squads()
+        self.assertIn(self.squad_1, lobby.squads)
+
+        self.squad_1.get()
+        self.squad_1.get_members()
+        self.assertEqual(lobby_name, self.squad_1.lobby_name)
+        for member in self.squad_1.members:
+            member.get()
+            self.assertEqual(lobby_name, member.lobby_name)
+
+    def test_add_duplicate_squad_to_lobby(self):
+        # create a lobby
+        lobby_name = 'test-lobby'
+        lobby = self.game_master_1.create_lobby(lobby_name, size=20)
+
+        self.game_master_1.add_squad_to_lobby(lobby_name, self.squad_1)
+        lobby.get_squads()
+        self.assertIn(self.squad_1, lobby.squads)
+        self.assertRaises(SquadAlreadyInLobbyException, lobby.add_squad, self.squad_1)
+
+        # get fresh lobby object try to add same squad into lobby
+        fresh_lobby = self.game_master_1.get_lobby(lobby_name)
+        with self.assertRaises(SquadAlreadyInLobbyException):
+            self.game_master_1.add_squad_to_lobby(lobby_name, self.squad_1)
+        fresh_lobby.get_squads()
+        self.assertEqual(1, len(fresh_lobby.squads))
+        self.assertIn(self.squad_1, fresh_lobby.squads)
+
+    def test_add_oversized_squad_to_lobby(self):
+        # create a lobby with allowed squad size of 2
+        lobby_name = 'test-lobby'
+        lobby = self.game_master_1.create_lobby(lobby_name, size=20, squad_size=2)
+
+        # add 2 more members to squad members
+        self.player_1.add_member_to_squad(self.squad_1, self.player_2)
+        self.player_1.add_member_to_squad(self.squad_1, self.player_3)
+
+        self.assertRaises(SquadTooBigException, lobby.add_squad, self.squad_1)
+
+    def test_add_duplicate_player_to_lobby(self):
+        # create a lobby
+        lobby_name = 'test-lobby'
+        lobby = self.game_master_1.create_lobby(lobby_name, size=20)
+
+        # add player_2 to player_1's squad, and add squad_1 to lobby
+        self.player_1.add_member_to_squad(self.squad_1, self.player_2)
+        self.game_master_1.add_squad_to_lobby(lobby_name, self.squad_1)
+        lobby.get_squads()
+        self.assertIn(self.squad_1, lobby.squads)
+
+        # add player_2 to player_3's squad, and try to add to lobby
+        self.player_3.add_member_to_squad(self.squad_3, self.player_2)
+        with self.assertRaises(PlayerAlreadyInLobbyException):
+            self.game_master_1.add_squad_to_lobby(lobby_name, self.squad_3)
+
+    def test_add_squad_full_lobby(self):
+        # create a lobby with size of 2 squads
+        lobby_name = 'test-lobby'
+        lobby = self.game_master_1.create_lobby(lobby_name, size=2)
+
+        # add 2 squads to the lobby
+        lobby.add_squad(self.squad_1)
+        lobby.add_squad(self.squad_2)
+
+        self.assertRaises(LobbyFullException, lobby.add_squad, self.squad_3)
+
+    def test_remove_squad_from_lobby(self):
+        # create a lobby and add two squads
+        lobby_name = 'test-lobby'
+        lobby = self.game_master_1.create_lobby(lobby_name, size=20)
+        lobby.add_squad(self.squad_1)
+        lobby.add_squad(self.squad_2)
+
+        # get fresh lobby object and populate squads
+        fresh_lobby = self.game_master_1.get_lobby(lobby_name)
+        fresh_lobby.get_squads()
+        self.assertTrue(2, len(fresh_lobby.squads))
+
+        # remove squad
+        fresh_lobby.remove_squad(self.squad_2)
+        self.assertTrue(1, len(fresh_lobby.squads))
+
+        # get fresh lobby object again and populate squads
+        fresh_lobby = self.game_master_1.get_lobby(lobby_name)
+        fresh_lobby.get_squads()
+        self.assertTrue(1, len(fresh_lobby.squads))
+
+    def test_get_squads_in_lobby(self):
+        # create a lobby and add a squad
+        lobby_name = 'test-lobby'
+        lobby = self.game_master_1.create_lobby(lobby_name, size=20)
+        self.game_master_1.add_squad_to_lobby(lobby_name, self.squad_1)
+
+        # get fresh lobby object and retrieve squads in it
+        fresh_lobby = self.game_master_1.get_lobby(lobby_name)
+        self.assertFalse(fresh_lobby.squads)
+        fresh_lobby.get_squads()
+        self.assertIn(self.squad_1, fresh_lobby.squads)
+
+        # add another squad to the lobby, assert they are in
+        lobby.add_squad(self.squad_2)
+        lobby.get_squads()
+        self.assertIn(self.squad_2, lobby.squads)
+
+    def test_update_lobby(self):
+        # create a lobby with specific settings
+        lobby_name = 'test-lobby'
+        lobby_size = 20
+        squad_size = 3
+        self.game_master_1.create_lobby(lobby_name, size=lobby_size, squad_size=squad_size)
+
+        lobby = self.game_master_1.get_lobby(lobby_name)
+        self.assertEqual(self.game_master_1, lobby.owner)
+        self.assertEqual(lobby_size, lobby.size)
+        self.assertEqual(squad_size, lobby.squad_size)
+
+        # update lobby settings
+        new_lobby_size = 15
+        new_squad_size = 4
+        self.game_master_1.update_lobby(lobby_name, size=new_lobby_size, squad_size=new_squad_size)
+
+        # get new lobby
+        lobby = self.game_master_1.get_lobby(lobby_name)
+        self.assertEqual(new_lobby_size, lobby.size)
+        self.assertEqual(new_squad_size, lobby.squad_size)
+
+    def test_full_game_flow(self):
+        # create a lobby, add some squads
+        lobby_name = 'test-lobby'
+        lobby = self.game_master_1.create_lobby(lobby_name, size=20)
+        lobby.add_squad(self.squad_1)
+        lobby.add_squad(self.squad_2)
+        lobby.add_squad(self.squad_3)
+
+        # start game
+        self.game_master_1.start_game(lobby.name)
+
+        # get fresh lobby object, assert that game has been started
+        fresh_lobby = self.game_master_1.get_lobby(lobby_name)
+        self.assertEqual(LobbyState.STARTED, fresh_lobby.state)
+
+        # end game
+        self.game_master_1.end_game(lobby.name)
+
+        # get another fresh lobby object, assert that game is finished
+        fresh_lobby = self.game_master_1.get_lobby(lobby_name)
+        self.assertEqual(LobbyState.FINISHED, fresh_lobby.state)
+
+    def test_start_finished_game_start_started_game(self):
+        # create a lobby, add some squads
+        lobby_name = 'test-lobby'
+        lobby = self.game_master_1.create_lobby(lobby_name, size=20)
+        self.game_master_1.add_squad_to_lobby(lobby_name, self.squad_1)
+        self.game_master_1.add_squad_to_lobby(lobby_name, self.squad_2)
+        self.game_master_1.add_squad_to_lobby(lobby_name, self.squad_3)
+
+        # start and end game
+        self.game_master_1.start_game(lobby.name)
+        self.game_master_1.end_game(lobby.name)
+
+        # assert that game is in finished state, and start it again
+        lobby = self.game_master_1.get_lobby(lobby_name)
+        self.assertEqual(LobbyState.FINISHED, lobby.state)
+        self.game_master_1.start_game(lobby.name)
+
+        lobby = self.game_master_1.get_lobby(lobby_name)
+        self.assertEqual(LobbyState.STARTED, lobby.state)
+
+        # try to start game again
+        self.assertRaises(LobbyAlreadyStartedException, self.game_master_1.start_game, lobby.name)
+
+    def test_get_players_in_lobby_handler(self):
+        # create a lobby with allowed squad size of 3
+        lobby_name = 'test-lobby'
+        self.game_master_1.create_lobby(lobby_name, size=20, squad_size=3)
+
+        # add 2 more members to squad members and add to the lobby
+        self.player_1.add_member_to_squad(self.squad_1, self.player_2)
+        self.player_1.add_member_to_squad(self.squad_1, self.player_3)
+        self.game_master_1.add_squad_to_lobby(lobby_name, self.squad_1)
+
+        # create another squad of 3 players and add to the lobby
+        squad_name = 'extra_squad'
+        player_4, player_5, player_6 = create_test_players(['x', 'y', 'z'])
+        squad_2 = player_4.create_squad(squad_name)
+        player_4.add_member_to_squad(squad_2, player_5)
+        player_4.add_member_to_squad(squad_2, player_6)
+        self.game_master_1.add_squad_to_lobby(lobby_name, squad_2)
+
+        # start game
+        self.game_master_1.get_players_in_lobby(lobby_name)
+        event, context = make_api_gateway_event(calling_user=self.game_master_1,
+                                                body={'name': lobby_name})
+        res = game_master_handlers.get_players_in_lobby_handler(event, context)
+        players = LobbyPlayerListSchema().loads(res['body'])['players']
+        self.assertTrue(6, len(players))
+
+        player = Player(players[0]['name'])
+        player.get()
+        self.assertEqual(lobby_name, player.lobby_name)

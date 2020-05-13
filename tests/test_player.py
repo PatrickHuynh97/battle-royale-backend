@@ -4,8 +4,10 @@ from unittest import mock
 import botocore
 
 from exceptions import UserAlreadyExistsException, SquadAlreadyExistsException, UserOwnsSquadException, \
-    UserDoesNotOwnSquadException
-from handlers.authorization_handlers import sign_up_handler
+    UserDoesNotOwnSquadException, UserAlreadyMemberException
+from handlers import authorization_handlers
+from handlers.player_handlers import get_owned_squads_handler
+from models.game_master import GameMaster
 from models.player import Player
 from models.squad import Squad
 from tests.helper_functions import make_api_gateway_event, create_test_players
@@ -24,8 +26,8 @@ class TestPlayer(TestWithMockAWSServices):
         player = Player(username)
         player.put()
 
-        res = player.get()
-        self.assertEqual(username, res['username'])
+        player.get()
+        self.assertEqual(username, player.username)
 
     def test_create_duplicate_player(self):
         # test trying to create two players with same usernams
@@ -37,7 +39,7 @@ class TestPlayer(TestWithMockAWSServices):
 
         # go through handler to create duplicate
         event, context = make_api_gateway_event(body={'username': username})
-        res = sign_up_handler(event, context)
+        res = authorization_handlers.sign_up_handler(event, context)
         body = json.loads(res['body'])
 
         # assert that a duplicate player was not created
@@ -144,6 +146,16 @@ class TestPlayer(TestWithMockAWSServices):
         self.assertIn(self.player_2, fresh_squad_1.members)
         self.assertIn(self.player_3, fresh_squad_1.members)
 
+    def test_add_duplicate_members_to_squad(self):
+        # create squad, add member
+        squad_name_1 = 'test-squad-1'
+        squad_1 = self.player_1.create_squad(squad_name_1)
+        self.player_1.add_member_to_squad(squad_1, self.player_2)
+        self.assertEqual(2, len(squad_1.members))
+
+        # try to add player_2 again
+        self.assertRaises(UserAlreadyMemberException, self.player_1.add_member_to_squad, squad_1, self.player_2)
+
     def test_remove_owner_from_squad(self):
         # create squad, add one members
         squad_name_1 = 'test-squad-1'
@@ -192,3 +204,37 @@ class TestPlayer(TestWithMockAWSServices):
 
         self.assertEqual(1, len(squads_player_2_is_in))
         self.assertEqual(squad, squads_player_2_is_in[0])
+
+    def test_get_owned_squad(self):
+        # create squad, add two more members, assert that squad now has 2 members in it
+        squad_name_1 = 'test-squad-1'
+        squad_1 = self.player_1.create_squad(squad_name_1)
+        self.player_1.add_member_to_squad(squad_1, self.player_2)
+        self.player_1.add_member_to_squad(squad_1, self.player_3)
+        self.assertEqual(3, len(squad_1.members))
+
+        # go through handler to create duplicate
+        event, context = make_api_gateway_event(calling_user=self.player_1, body={'username': self.player_1.username})
+        res = get_owned_squads_handler(event, context)
+        body = json.loads(res['body'])
+
+        self.assertEqual(1, len(body['squads']))
+        self.assertEqual(squad_1.name, body['squads'][0]['name'])
+        self.assertEqual(3, len(body['squads'][0]['members']))
+
+    def test_get_current_lobby(self):
+        # create squad, and add to lobby
+        squad_name_1 = 'test-squad-1'
+        squad_1 = self.player_1.create_squad(squad_name_1)
+        self.player_1.add_member_to_squad(squad_1, self.player_2)
+        self.player_1.add_member_to_squad(squad_1, self.player_3)
+        self.assertEqual(3, len(squad_1.members))
+
+        # create gamemaster, create lobby, and add squad_1 in
+        actual_lobby_name = 'test-lobby'
+        gamemaster = GameMaster('gm')
+        lobby = gamemaster.create_lobby(actual_lobby_name)
+        gamemaster.add_squad_to_lobby(actual_lobby_name, squad_1)
+
+        retrieved_lobby = self.player_1.get_current_lobby()
+        self.assertEqual(lobby, retrieved_lobby)

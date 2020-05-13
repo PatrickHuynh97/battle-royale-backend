@@ -26,6 +26,7 @@ def make_api_gateway_event(calling_user=None, path_params={}, body={}, headers=N
 
 
 def create_test_players(usernames: list):
+    # create test players
     players = []
     for username in usernames:
         player = Player(username)
@@ -34,12 +35,22 @@ def create_test_players(usernames: list):
     return players
 
 
+def create_test_squads(players: list):
+    # create a squad with players inside
+    squads = []
+    squad_count = 1
+    for player in players:
+        squad = player.create_squad(f'squad_{squad_count}')
+        squad_count += 1
+        squads.append(squad)
+    return squads
+
+
 def create_test_game_masters(usernames: list):
+    # create test game_masters
     game_masters = []
     for username in usernames:
         game_master = GameMaster(username)
         game_master.put()
         game_masters.append(game_master)
     return game_masters
-
-

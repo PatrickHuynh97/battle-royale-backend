@@ -1,5 +1,5 @@
 from handlers.lambda_helpers import endpoint
-from handlers.schemas import SquadListSchema
+from handlers.schemas import SquadListSchema, LobbySchema
 from models.player import Player
 from models.squad import Squad
 
@@ -86,3 +86,28 @@ def get_not_owned_squads_handler(event, context):
                  members=[dict(username=member.username) for member in squad.members])
         ] for squad in squads
     }
+
+
+@endpoint(response_schema=LobbySchema)
+def get_current_lobby(event, context):
+    """
+    Handler for getting the lobby the player is currently in
+    """
+    username = event['calling_user']
+
+    lobby = Player(username).get_current_lobby()
+    lobby.get()
+    lobby.get_squads()
+
+    return {
+            'name': lobby.name,
+            'owner': lobby.owner.username,
+            'state': lobby.state.value,
+            'size': lobby.size,
+            'squad_size': lobby.squad_size,
+            'squads': [dict(name=squad.name,
+                            owner=squad.owner.username,
+                            members=[dict(username=member.username)
+                                     for member in squad.members])
+                       for squad in lobby.squads]
+        }

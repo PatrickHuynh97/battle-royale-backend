@@ -76,6 +76,11 @@ class UserOwnsSquadException(PlayerException):
     error_code = 400
 
 
+class PlayerNotInLobbyException(PlayerException):
+    tag = __qualname__
+    error_code = 400
+
+
 # exceptions for Squads
 class SquadException(ApiException):
     tag = "SquadException"
@@ -97,12 +102,63 @@ class UserAlreadyMemberException(SquadException):
     error_code = 400
 
 
+# exceptions for GameMasters
+class GameMasterException(ApiException):
+    tag = "GameMasterException"
+    error_code = 500
+
+
 # exceptions for Lobbys
 class LobbyException(ApiException):
-    tag = "SquadException"
+    tag = "LobbyException"
     error_code = 500
 
 
 class LobbyDoesNotExistException(LobbyException):
+    tag = __qualname__
+    error_code = 400
+
+
+class SquadAlreadyInLobbyException(LobbyException):
+    tag = __qualname__
+    error_code = 400
+
+
+class SquadNotInLobbyException(LobbyException):
+    tag = __qualname__
+    error_code = 400
+
+
+class GameMasterNotOwnLobbyException(LobbyException):
+    tag = __qualname__
+    error_code = 400
+
+
+class LobbySettingsNotGivenException(LobbyException):
+    tag = __qualname__
+    error_code = 400
+
+
+class SquadTooBigException(LobbyException):
+    tag = __qualname__
+    error_code = 400
+
+
+class LobbyFullException(LobbyException):
+    tag = __qualname__
+    error_code = 400
+
+
+class LobbyAlreadyStartedException(LobbyException):
+    tag = __qualname__
+    error_code = 400
+
+
+class NotEnoughSquadsException(LobbyException):
+    tag = __qualname__
+    error_code = 400
+
+
+class PlayerAlreadyInLobbyException(LobbyException):
     tag = __qualname__
     error_code = 400

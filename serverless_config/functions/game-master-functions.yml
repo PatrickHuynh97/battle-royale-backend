@@ -1,0 +1,180 @@
+createLobby:
+  handler: handlers.game_master_handlers.create_lobby_handler
+  events:
+    - http:
+        path: /game-master/{username}/lobby
+        method: post
+        request:
+          parameters:
+            paths:
+              username: true
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId:
+            Ref: ApiGatewayAuthorizer
+  environment:
+    USER_POOL_CLIENT_ID:
+      Ref: CognitoUserPoolClient
+    USER_POOL_ID:
+      Ref: CognitoUserPool
+    TABLE:
+      Fn::GetAtt: [BattleRoyaleTable, Arn]
+
+getLobby:
+  handler: handlers.game_master_handlers.get_lobby_handler
+  events:
+    - http:
+        path: /game-master/{username}/lobby
+        request:
+          parameters:
+            paths:
+              username: true
+        method: get
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId:
+            Ref: ApiGatewayAuthorizer
+  environment:
+    USER_POOL_CLIENT_ID:
+      Ref: CognitoUserPoolClient
+    USER_POOL_ID:
+      Ref: CognitoUserPool
+    TABLE:
+      Fn::GetAtt: [BattleRoyaleTable, Arn]
+
+deleteLobby:
+  handler: handlers.game_master_handlers.delete_lobby_handler
+  events:
+    - http:
+        path: /game-master/{username}/lobby
+        method: delete
+        request:
+          parameters:
+            paths:
+              username: true
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId:
+            Ref: ApiGatewayAuthorizer
+  environment:
+    USER_POOL_CLIENT_ID:
+      Ref: CognitoUserPoolClient
+    USER_POOL_ID:
+      Ref: CognitoUserPool
+    TABLE:
+      Fn::GetAtt: [BattleRoyaleTable, Arn]
+
+addSquadToLobby:
+  handler: handlers.game_master_handlers.add_squad_to_lobby_handler
+  events:
+    - http:
+        path: /game-master/{username}/lobby/{lobby}/squads
+        request:
+          parameters:
+            paths:
+              username: true
+              lobby: true
+        method: post
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId:
+            Ref: ApiGatewayAuthorizer
+  environment:
+    USER_POOL_CLIENT_ID:
+      Ref: CognitoUserPoolClient
+    USER_POOL_ID:
+      Ref: CognitoUserPool
+    TABLE:
+      Fn::GetAtt: [BattleRoyaleTable, Arn]
+
+removeSquadFromLobby:
+  handler: handlers.game_master_handlers.remove_squad_from_lobby_handler
+  events:
+    - http:
+        path: /game-master/{username}/lobby/{lobby}/squads
+        request:
+          parameters:
+            paths:
+              username: true
+              lobby: true
+        method: delete
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId:
+            Ref: ApiGatewayAuthorizer
+  environment:
+    USER_POOL_CLIENT_ID:
+      Ref: CognitoUserPoolClient
+    USER_POOL_ID:
+      Ref: CognitoUserPool
+    TABLE:
+      Fn::GetAtt: [BattleRoyaleTable, Arn]
+
+updateLobby:
+  handler: handlers.game_master_handlers.update_lobby_handler
+  events:
+    - http:
+        path: /game-master/{username}/lobby/{lobby}/settings
+        request:
+          parameters:
+            paths:
+              username: true
+              lobby: true
+        method: post
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId:
+            Ref: ApiGatewayAuthorizer
+  environment:
+    USER_POOL_CLIENT_ID:
+      Ref: CognitoUserPoolClient
+    USER_POOL_ID:
+      Ref: CognitoUserPool
+    TABLE:
+      Fn::GetAtt: [BattleRoyaleTable, Arn]
+
+startLobby:
+  handler: handlers.game_master_handlers.start_lobby_handler
+  events:
+    - http:
+        path: /game-master/{username}/lobby/{lobby}/start
+        request:
+          parameters:
+            paths:
+              username: true
+              lobby: true
+        method: post
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId:
+            Ref: ApiGatewayAuthorizer
+  environment:
+    USER_POOL_CLIENT_ID:
+      Ref: CognitoUserPoolClient
+    USER_POOL_ID:
+      Ref: CognitoUserPool
+    TABLE:
+      Fn::GetAtt: [BattleRoyaleTable, Arn]
+
+endLobby:
+  handler: handlers.game_master_handlers.start_lobby_handler
+  events:
+    - http:
+        path: /game-master/{username}/lobby/{lobby}/end
+        request:
+          parameters:
+            paths:
+              username: true
+              lobby: true
+        method: post
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId:
+            Ref: ApiGatewayAuthorizer
+  environment:
+    USER_POOL_CLIENT_ID:
+      Ref: CognitoUserPoolClient
+    USER_POOL_ID:
+      Ref: CognitoUserPool
+    TABLE:
+      Fn::GetAtt: [BattleRoyaleTable, Arn]

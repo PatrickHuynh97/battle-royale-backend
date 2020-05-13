@@ -59,7 +59,7 @@ class User:
 
         :param username: username of user to log in
         :param password: password of user
-        :return: idToken to be used for API calls, in the Authentication header of requests to graphQl_endpoint
+        :return: tokens to be used for API calls, in the Authentication header of requests to API
         """
 
         try:
@@ -88,7 +88,6 @@ class User:
         Function signs user out of all devices
 
         :param access_token: access token given during authentication (sign_in) process
-
         :return: confirmation message
         """
         # authenticate user and get access token
@@ -100,3 +99,27 @@ class User:
             return {'message': 'Sign-out successful'}
         else:
             raise SignOutException('Failed to sign out')
+
+    def refresh_tokens(self, refresh_token: str):
+        """
+        Refreshes a user's ID and Access token
+        :param refresh_token: Refresh token to be used to refresh ID and Access tokens
+        :return: tokens to be used for API calls, in the Authentication header of requests to API
+        """
+        try:
+            # authenticate user and get access token
+            res = self.cognito_client.initiate_auth(
+                ClientId=self.USER_POOL_CLIENT_ID,
+                AuthFlow='REFRESH_TOKEN_AUTH',
+                AuthParameters={
+                    'REFRESH_TOKEN': refresh_token,
+                }
+            )
+            if res['ResponseMetadata']['HTTPStatusCode'] == 200:
+                return {'id_token': res["AuthenticationResult"]['IdToken'],
+                        'access_token': res["AuthenticationResult"]['AccessToken'],
+                        'refresh_token': res['AuthenticationResult']['RefreshToken']}
+            else:
+                raise SignInException(message="Cognito sign in failed")
+        except ClientError:
+            raise UserDoesNotExistException(message="Invalid refresh token")

@@ -1,5 +1,7 @@
 import json
 from functools import wraps
+from json import JSONDecodeError
+
 from exceptions import ApiException
 
 
@@ -13,6 +15,7 @@ def endpoint(response_schema=None):
         @wraps(func)
         def wrapper(event, context):
             set_calling_user(event)
+            preload_body(event)
             try:
                 result = func(event, context)
                 # if API exception was raised, catch and format for Lambda
@@ -35,6 +38,14 @@ def set_calling_user(event):
     authorizer = event['requestContext'].get('authorizer')
     if authorizer:
         event['calling_user'] = authorizer['claims']['cognito:username']
+
+
+def preload_body(event):
+    # try to pre-load body into JSON. If it fails, do nothing.
+    try:
+        event['body'] = json.loads(event['body'])
+    except JSONDecodeError:
+        pass
 
 
 def handle_api_exception(exception):

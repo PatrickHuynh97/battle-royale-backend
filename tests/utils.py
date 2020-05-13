@@ -8,7 +8,3 @@ def make_test_event(body=None, path_params=None, headers=None):
         "headers": headers if headers else {},
     }
 
-
-def make_lambda_call(method, event):
-    res = method(event, None)
-    return json.loads(res["body"])

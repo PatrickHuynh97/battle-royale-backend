@@ -2,12 +2,14 @@ from boto3.dynamodb.conditions import Key
 
 from db.dynamodb_connector import DynamoDbConnector
 from exceptions import UserDoesNotExistException, UserDoesNotOwnSquadException, SquadAlreadyExistsException, \
-    UserOwnsSquadException
-from models.squad import Squad
-from models.user import User
+    UserOwnsSquadException, PlayerNotInLobbyException
+from models import squad as squad_model
+from models import user
+from models import lobby as lobby_model
+from models import game_master as game_master_model
 
 
-class Player(User):
+class Player(user.User):
     """
     A Player type of User.
     """
@@ -15,6 +17,8 @@ class Player(User):
     def __init__(self, username: str):
         super().__init__()
         self.username = username
+        self.lobby_name = None
+        self.lobby_owner = None
         self.table = DynamoDbConnector.get_table()
 
     def __eq__(self, other):
@@ -39,9 +43,8 @@ class Player(User):
         if not player:
             raise UserDoesNotExistException("Player with username {} does not exist".format(self.username))
 
-        return {
-            'username': player['pk']
-        }
+        self.lobby_name = player['lobby-name']
+        self.lobby_owner = player['lobby-owner']
 
     def exists(self):
         """
@@ -64,6 +67,9 @@ class Player(User):
             Item={
                 'pk': self.username,
                 'sk': 'USER',
+                'in-game': False,
+                'lobby-name': None,
+                'lobby-owner': None
             }
         )
 
@@ -93,11 +99,10 @@ class Player(User):
         :param squad_name: name of squad to create
         :return: None
         """
-        squad = Squad(squad_name)
+        squad = squad_model.Squad(squad_name)
         if squad.exists():
             raise SquadAlreadyExistsException("Squad with name {} already exists".format(squad_name))
-        squad.put(owner=self.username)
-        squad.add_member(self)
+        squad.put(owner=self)
         return squad
 
     def delete_squad(self, squad):
@@ -166,7 +171,7 @@ class Player(User):
         squads = []
         for item in response['Items']:
             # get squad and fill with information
-            squad = Squad(item['sk'].split('#')[1])
+            squad = squad_model.Squad(item['sk'].split('#')[1])
             squad.get()
             squad.get_members()
             squads.append(squad)
@@ -187,9 +192,49 @@ class Player(User):
         squads = []
         for item in response['Items']:
             # get squad and fill with information
-            squad = Squad(item['lsi'].split('#')[1])
+            squad = squad_model.Squad(item['lsi'].split('#')[1])
             squad.get()
             squad.get_members()
             squads.append(squad)
 
         return squads
+
+    def set_in_lobby(self, lobby):
+        """
+        If player is in a squad, that squad is in a game lobby, set flag on player to show this
+        :param lobby: Lobby object of lobby player is in which has started
+        :return:
+        """
+
+        self.table.update_item(
+            Key={
+                'pk': self.username,
+                'sk': f'USER'
+            },
+            AttributeUpdates={'lobby-name': dict(Value=lobby.name),
+                              'lobby-owner': dict(Value=lobby.owner.username)})
+
+    def set_no_lobby(self):
+        """
+        If player is in a squad, that squad is in a game lobby, set flag on player to show this
+        :param lobby: Lobby object of lobby player is in which has started
+        :return:
+        """
+
+        self.table.update_item(
+            Key={
+                'pk': self.username,
+                'sk': f'USER'
+            },
+            AttributeUpdates={'lobby-name': dict(Value=None)})
+
+    def get_current_lobby(self):
+        """
+        Get current game lobby if player is in an active game
+        :return: Game lobby information
+        """
+        self.get()
+        if self.lobby_name and self.lobby_owner:
+            return lobby_model.Lobby(self.lobby_name, game_master_model.GameMaster(self.lobby_owner))
+        else:
+            raise PlayerNotInLobbyException("Player is not currently in a Lobby")

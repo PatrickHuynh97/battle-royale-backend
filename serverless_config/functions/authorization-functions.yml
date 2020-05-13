@@ -39,3 +39,15 @@ signOut:
       Ref: CognitoUserPoolClient
     USER_POOL_ID:
       Ref: CognitoUserPool
+
+refreshTokens:
+  handler: handlers.authorization_handlers.refresh_tokens_handler
+  events:
+    - http:
+        path: /user_management/refresh
+        method: post
+  environment:
+    USER_POOL_CLIENT_ID:
+      Ref: CognitoUserPoolClient
+    USER_POOL_ID:
+      Ref: CognitoUserPool

@@ -3,6 +3,7 @@ from boto3.dynamodb.conditions import Key
 from db.dynamodb_connector import DynamoDbConnector
 from exceptions import SquadDoesNotExistException, SquadAlreadyExistsException, UserAlreadyMemberException
 from models import player
+from models import lobby as lobby_model
 
 
 class Squad:
@@ -13,6 +14,8 @@ class Squad:
     def __init__(self, name: str, owner: str = None):
         self.name = name  # name of squad
         self.owner = owner  # owner of squad
+        self.lobby_name = None  # will have a value if squad is in a lobby
+        self.lobby_owner = None  # will have a value if squad is in a lobby
         self.members = []  # list of members in squad
         self.table = DynamoDbConnector.get_table()
 
@@ -26,7 +29,7 @@ class Squad:
 
     def put(self, owner):
         """
-        Inserts a new player into the database
+        Inserts a new Squad into the database and adds the owner to it
         :return: None
         """
         if self.exists():
@@ -36,9 +39,12 @@ class Squad:
             Item={
                 'pk': 'squad',
                 'sk': f'SQUADNAME#{self.name}',
-                'lsi': f'SQUADOWNER#{owner}',
+                'lsi': f'SQUADOWNER#{owner.username}',
+                'lobby-name': None
             }
         )
+
+        self.add_member(owner)
 
     def delete(self):
         """
@@ -85,11 +91,8 @@ class Squad:
             raise SquadDoesNotExistException("Squad with name {} does not exist".format(self.name))
 
         self.owner = player.Player(squad['lsi'].split('#')[1])  # owner of squad is the LSI value
-
-        return {
-            'name': self.name,
-            'owner': self.owner
-        }
+        self.lobby_name = squad.get('lobby-name')
+        self.lobby_owner = squad.get('lobby-owner')
 
     def get_members(self):
         """
@@ -116,9 +119,8 @@ class Squad:
         """
         self.get_members()
 
-        for member in self.members:
-            if member.username == new_member.username:
-                raise UserAlreadyMemberException("User {} is already in squad {}".format(new_member, self.name))
+        if new_member in self.members:
+            raise UserAlreadyMemberException("User {} is already in squad {}".format(new_member, self.name))
 
         # add member in database
         self.table.put_item(
@@ -145,3 +147,61 @@ class Squad:
             }
         )
         self.members.remove(member_to_delete)
+
+    def leave_lobby(self):
+        """
+        Leave a lobby that a GameMaster has added you to
+        :return: None
+        """
+        self.get()
+        lobby = lobby_model.Lobby(self.lobby_name, self.lobby_owner)
+        lobby.get_squads()
+        lobby.remove_squad(self)
+        self.set_no_lobby()
+
+    def set_in_lobby(self, lobby):
+        """
+        If squad is in a lobby, set flag to show this. Set flag for each player in the squad as well.
+        :param lobby: Lobby object of lobby squad is in
+        :return: None
+        """
+
+        self.table.update_item(
+            Key={
+                'pk': 'squad',
+                'sk': f'SQUADNAME#{self.name}',
+            },
+            AttributeUpdates={'lobby-name': dict(Value=lobby.name),
+                              'lobby-owner': dict(Value=lobby.owner.username)})
+
+        # set each player in squad as in lobby
+        for player in self.members:
+            player.set_in_lobby(lobby)
+
+    def set_no_lobby(self):
+        """
+        If squad is not a lobby, set lobby-name to None
+        """
+
+        self.table.update_item(
+            Key={
+                'pk': 'squad',
+                'sk': f'SQUADNAME#{self.name}',
+            },
+            AttributeUpdates={'lobby-name': dict(Value=None),
+                              'lobby-owner': dict(Value=None)})
+
+        # set each player in squad as in lobby
+        for player in self.members:
+            player.set_no_lobby()
+
+    def in_lobby(self):
+        """
+        Returns True if the squad is in a lobby
+        :return: True if squad is in a lobby, otherwise False
+        """
+        self.get()
+        if self.lobby_name:
+            return True
+        else:
+            return False
