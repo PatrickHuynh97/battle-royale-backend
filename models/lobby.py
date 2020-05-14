@@ -1,9 +1,9 @@
 from boto3.dynamodb.conditions import Key
 
 from db.dynamodb_connector import DynamoDbConnector
-from exceptions import LobbyDoesNotExistException, SquadAlreadyInLobbyException, GameMasterNotOwnLobbyException, \
-    SquadNotInLobbyException, SquadTooBigException, LobbyFullException, \
-    LobbyAlreadyStartedException, NotEnoughSquadsException, PlayerAlreadyInLobbyException
+from exceptions import LobbyDoesNotExistException, SquadInLobbyException, SquadNotInLobbyException, \
+    SquadTooBigException, LobbyFullException, LobbyAlreadyStartedException, NotEnoughSquadsException, \
+    PlayerAlreadyInLobbyException, LobbyNotStartedException, UserNotInLobbyException
 from models import game_master
 from models.enums import LobbyState, PlayerState
 from models import squad as squad_model
@@ -144,6 +144,7 @@ class Lobby:
         if len(self.squads) < 2:
             raise NotEnoughSquadsException("Lobby does not have enough squads to start")
 
+        # set game as started
         self.table.update_item(
             Key={
                 'pk': self.name,
@@ -184,7 +185,7 @@ class Lobby:
 
         # check if squad with same name is already in lobby
         if squad in self.squads:
-            raise SquadAlreadyInLobbyException(f"Squad with name {squad.name} is already in lobby {self.name}")
+            raise SquadInLobbyException(f"Squad with name {squad.name} is already in lobby {self.name}")
 
         # if squad is not too large for the lobby
         if len(squad.members) > self.squad_size:
@@ -237,8 +238,6 @@ class Lobby:
 
         self.squads.remove(squad)
 
-        squad.set_no_lobby()
-
     def get_squads(self):
         """
         Get all squads in the lobby and save to object
@@ -260,11 +259,11 @@ class Lobby:
         """
         Checks if a specific player is already in the game lobby or not
         :param: player: player object
-        :return: True if player is in the game lobby, otherwise False
+        :return: Returns player's squad if player is in the game lobby, otherwise False
         """
         for squad in self.squads:
             if player in squad.members:
-                return True
+                return squad
         return False
 
     def get_players_and_states(self):
@@ -288,3 +287,56 @@ class Lobby:
                 })
 
         return players_in_lobby
+
+    def get_player(self, player):
+        """
+        Get a specific player from the game lobby
+        :param: player: Player to get from the game lobby
+        :return: Player object
+        """
+        players_in_game = self.get_players_and_states()
+        for _player in players_in_game:
+            if _player['name'] == player.username:
+                return _player
+
+        raise UserNotInLobbyException(f"User {player.username} could not be found in the lobby")
+
+    def set_player_dead(self, player):
+        """
+        Set a player as dead in the game lobby. Assumes lobby.get() and lobby.get_squads() has been called
+        :param player: Player to set as dead
+        :return: None
+        """
+        if self.state != LobbyState.STARTED:
+            raise LobbyNotStartedException("Lobby has not been started yet")
+
+        # assert that player is in the lobby
+        squad = self.player_in_lobby(player)
+
+        # set the player as dead. If they are already dead, this statement has no effect
+        self.table.update_item(
+            Key={
+                'pk': 'LOBBY',
+                'sk': f'SQUAD#{squad.name}'
+            },
+            AttributeUpdates={f'PLAYER#{player.username}': dict(Value=PlayerState.DEAD.value)})
+
+    def set_player_alive(self, player):
+        """
+        Set a player as alive in the game lobby. Assumes lobby.get() and lobby.get_squads() has been called
+        :param player: Player to set as alive
+        :return: None
+        """
+        if self.state != LobbyState.STARTED:
+            raise LobbyNotStartedException("Lobby has not been started yet")
+
+        # assert that player is in the lobby
+        squad = self.player_in_lobby(player)
+
+        # set the player as alive. If they are already alive, this statement has no effect
+        self.table.update_item(
+            Key={
+                'pk': 'LOBBY',
+                'sk': f'SQUAD#{squad.name}'
+            },
+            AttributeUpdates={f'PLAYER#{player.username}': dict(Value=PlayerState.ALIVE.value)})

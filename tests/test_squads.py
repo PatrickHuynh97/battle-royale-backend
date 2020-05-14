@@ -1,6 +1,9 @@
+from exceptions import UserDoesNotOwnSquadException
+from handlers.player_handlers import pull_squad_from_lobby_handler
 from models.game_master import GameMaster
 from models.player import Player
 from models.squad import Squad
+from tests.helper_functions import make_api_gateway_event
 from tests.mock_db import TestWithMockAWSServices
 
 
@@ -27,6 +30,9 @@ class TestSquads(TestWithMockAWSServices):
         lobby = game_master.create_lobby(lobby_name, size=20)
         game_master.add_squad_to_lobby(lobby_name, squad)
 
+        _lobby = self.player_1.get_current_lobby()
+        self.assertEqual(lobby, _lobby)
+
         # get fresh lobby object, make sure everything checks out
         fresh_lobby = game_master.get_lobby(lobby.name)
         fresh_lobby.get_squads()
@@ -35,8 +41,12 @@ class TestSquads(TestWithMockAWSServices):
         self.assertEqual(lobby_name, squad.lobby_name)
         self.assertEqual(game_master.username, squad.lobby_owner)
 
-        # pull squad from lobby as squad
-        squad.leave_lobby()
+        # try to pull squad from lobby as non-owner
+        self.assertRaises(UserDoesNotOwnSquadException, self.player_2.pull_squad_from_lobby, squad)
+
+        # pull squad from lobby via handler
+        event, context = make_api_gateway_event(calling_user=self.player_1, path_params={'squadname': squad.name})
+        pull_squad_from_lobby_handler(event, context)
 
         lobby.get_squads()
         self.assertNotIn(squad, lobby.squads)

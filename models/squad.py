@@ -53,7 +53,7 @@ class Squad:
         """
         # remove squad members
         for member in self.members:
-            self.delete_member(member)
+            self.remove_member(member)
 
         # delete squad from database
         self.table.delete_item(
@@ -134,26 +134,25 @@ class Squad:
 
         self.members.append(new_member)
 
-    def delete_member(self, member_to_delete):
+    def remove_member(self, member_to_remove):
         """
         Delete a user from the squad
-        :param member_to_delete: Username of player to delete
+        :param member_to_remove: Username of player to delete
         :return:
         """
         res = self.table.delete_item(
             Key={
                 'pk': 'squad-member',
-                'sk': f'SQUAD#{self.name}#MEMBER#{member_to_delete.username}',
+                'sk': f'SQUAD#{self.name}#MEMBER#{member_to_remove.username}',
             }
         )
-        self.members.remove(member_to_delete)
+        self.members.remove(member_to_remove)
 
     def leave_lobby(self):
         """
-        Leave a lobby that a GameMaster has added you to
+        Leave a lobby that a GameMaster has added you to. Requires basic squad information (squad.get())
         :return: None
         """
-        self.get()
         lobby = lobby_model.Lobby(self.lobby_name, self.lobby_owner)
         lobby.get_squads()
         lobby.remove_squad(self)

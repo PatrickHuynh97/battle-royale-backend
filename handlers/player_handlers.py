@@ -89,7 +89,7 @@ def get_not_owned_squads_handler(event, context):
 
 
 @endpoint(response_schema=LobbySchema)
-def get_current_lobby(event, context):
+def get_current_lobby_handler(event, context):
     """
     Handler for getting the lobby the player is currently in
     """
@@ -111,3 +111,45 @@ def get_current_lobby(event, context):
                                      for member in squad.members])
                        for squad in lobby.squads]
         }
+
+
+@endpoint()
+def get_current_state_handler(event, context):
+    """
+    Handler for getting current state of the player if they are in a Lobby
+    """
+    username = event['calling_user']
+
+    state = Player(username).get_current_state()
+
+    return dict(state=state.value)
+
+
+@endpoint()
+def set_dead_handler(event, context):
+    """
+    Handler for setting a player as dead in the current lobby they are in
+    """
+    username = event['calling_user']
+
+    Player(username).dead()
+
+
+@endpoint()
+def set_alive_handler(event, context):
+    """
+    Handler for setting a player as alive in the current lobby they are in
+    """
+    username = event['calling_user']
+
+    Player(username).alive()
+
+
+@endpoint()
+def pull_squad_from_lobby_handler(event, context):
+    """
+    Handler for pulling the squad the player owns and is currently in a lobby with, out of the lobby
+    """
+    username = event['calling_user']
+    squad_name = event['pathParameters']['squadname']
+    Player(username).pull_squad_from_lobby(Squad(squad_name))

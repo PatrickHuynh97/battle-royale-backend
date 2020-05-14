@@ -76,7 +76,7 @@ class UserOwnsSquadException(PlayerException):
     error_code = 400
 
 
-class PlayerNotInLobbyException(PlayerException):
+class UserNotInLobbyException(PlayerException):
     tag = __qualname__
     error_code = 400
 
@@ -119,7 +119,7 @@ class LobbyDoesNotExistException(LobbyException):
     error_code = 400
 
 
-class SquadAlreadyInLobbyException(LobbyException):
+class SquadInLobbyException(LobbyException):
     tag = __qualname__
     error_code = 400
 
@@ -150,6 +150,11 @@ class LobbyFullException(LobbyException):
 
 
 class LobbyAlreadyStartedException(LobbyException):
+    tag = __qualname__
+    error_code = 400
+
+
+class LobbyNotStartedException(LobbyException):
     tag = __qualname__
     error_code = 400
 

@@ -1,4 +1,4 @@
-from exceptions import SquadAlreadyInLobbyException, SquadTooBigException, LobbyFullException, \
+from exceptions import SquadInLobbyException, SquadTooBigException, LobbyFullException, \
     LobbyAlreadyStartedException, PlayerAlreadyInLobbyException
 from handlers import game_master_handlers
 from handlers.schemas import LobbySchema, LobbyPlayerListSchema
@@ -104,11 +104,11 @@ class TestGameMaster(TestWithMockAWSServices):
         self.game_master_1.add_squad_to_lobby(lobby_name, self.squad_1)
         lobby.get_squads()
         self.assertIn(self.squad_1, lobby.squads)
-        self.assertRaises(SquadAlreadyInLobbyException, lobby.add_squad, self.squad_1)
+        self.assertRaises(SquadInLobbyException, lobby.add_squad, self.squad_1)
 
         # get fresh lobby object try to add same squad into lobby
         fresh_lobby = self.game_master_1.get_lobby(lobby_name)
-        with self.assertRaises(SquadAlreadyInLobbyException):
+        with self.assertRaises(SquadInLobbyException):
             self.game_master_1.add_squad_to_lobby(lobby_name, self.squad_1)
         fresh_lobby.get_squads()
         self.assertEqual(1, len(fresh_lobby.squads))
@@ -144,20 +144,21 @@ class TestGameMaster(TestWithMockAWSServices):
     def test_add_squad_full_lobby(self):
         # create a lobby with size of 2 squads
         lobby_name = 'test-lobby'
-        lobby = self.game_master_1.create_lobby(lobby_name, size=2)
+        self.game_master_1.create_lobby(lobby_name, size=2)
 
         # add 2 squads to the lobby
-        lobby.add_squad(self.squad_1)
-        lobby.add_squad(self.squad_2)
+        self.game_master_1.add_squad_to_lobby(lobby_name, self.squad_1)
+        self.game_master_1.add_squad_to_lobby(lobby_name, self.squad_2)
 
-        self.assertRaises(LobbyFullException, lobby.add_squad, self.squad_3)
+        with self.assertRaises(LobbyFullException):
+            self.game_master_1.add_squad_to_lobby(lobby_name, self.squad_3)
 
     def test_remove_squad_from_lobby(self):
         # create a lobby and add two squads
         lobby_name = 'test-lobby'
         lobby = self.game_master_1.create_lobby(lobby_name, size=20)
-        lobby.add_squad(self.squad_1)
-        lobby.add_squad(self.squad_2)
+        self.game_master_1.add_squad_to_lobby(lobby_name, self.squad_1)
+        self.game_master_1.add_squad_to_lobby(lobby_name, self.squad_2)
 
         # get fresh lobby object and populate squads
         fresh_lobby = self.game_master_1.get_lobby(lobby_name)
@@ -165,7 +166,7 @@ class TestGameMaster(TestWithMockAWSServices):
         self.assertTrue(2, len(fresh_lobby.squads))
 
         # remove squad
-        fresh_lobby.remove_squad(self.squad_2)
+        self.game_master_1.remove_squad_from_lobby(lobby_name, self.squad_2)
         self.assertTrue(1, len(fresh_lobby.squads))
 
         # get fresh lobby object again and populate squads

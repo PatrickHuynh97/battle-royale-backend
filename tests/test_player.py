@@ -1,12 +1,14 @@
 import json
-from unittest import mock
-
 import botocore
 
+from unittest import mock
 from exceptions import UserAlreadyExistsException, SquadAlreadyExistsException, UserOwnsSquadException, \
-    UserDoesNotOwnSquadException, UserAlreadyMemberException
+    UserDoesNotOwnSquadException, UserAlreadyMemberException, LobbyNotStartedException
 from handlers import authorization_handlers
-from handlers.player_handlers import get_owned_squads_handler
+from handlers.player_handlers import get_owned_squads_handler, set_dead_handler, set_alive_handler, \
+    get_current_lobby_handler
+from handlers.schemas import LobbySchema
+from models.enums import PlayerState
 from models.game_master import GameMaster
 from models.player import Player
 from models.squad import Squad
@@ -64,7 +66,7 @@ class TestPlayer(TestWithMockAWSServices):
 
         # mock calls to cognito identify provider whilst allowing calls to DynamoDB
         def mock_make_api_call(self, operation_name, kwarg):
-            if operation_name == 'Query' or operation_name == 'DeleteItem':
+            if operation_name == 'Query' or operation_name == 'DeleteItem' or operation_name == 'GetItem':
                 return orig(self, operation_name, kwarg)
             else:
                 pass
@@ -188,6 +190,36 @@ class TestPlayer(TestWithMockAWSServices):
         self.assertIn(self.player_2, squad_1.members)
         self.assertNotIn(self.player_3, squad_1.members)
 
+    def test_leave_squad(self):
+        # player_1 creates squad, adds player_2 and player_3
+        squad_name_1 = 'test-squad-1'
+        squad = self.player_1.create_squad(squad_name_1)
+        self.player_1.add_member_to_squad(squad, self.player_2)
+        self.player_1.add_member_to_squad(squad, self.player_3)
+
+        # get fresh squad object to verify
+        fresh_squad = Squad(squad_name_1)
+        fresh_squad.get()
+        fresh_squad.get_members()
+        self.assertEqual(self.player_1, fresh_squad.owner)
+        self.assertIn(self.player_1, fresh_squad.members)
+        self.assertIn(self.player_2, fresh_squad.members)
+        self.assertIn(self.player_3, fresh_squad.members)
+
+        # player_1 cannot leave squad as they own it
+        self.assertRaises(UserOwnsSquadException, self.player_1.leave_squad, fresh_squad)
+
+        # player 3 leaves squad
+        self.player_3.leave_squad(fresh_squad)
+
+        # get fresh squad object again
+        fresh_squad = Squad(squad_name_1)
+        fresh_squad.get()
+        fresh_squad.get_members()
+        self.assertIn(self.player_1, fresh_squad.members)
+        self.assertIn(self.player_2, fresh_squad.members)
+        self.assertNotIn(self.player_3, fresh_squad.members)
+
     def test_get_not_owned_squads(self):
         # player_1 creates squad, adds player_2
         squad_name = 'test-squad-1'
@@ -222,7 +254,7 @@ class TestPlayer(TestWithMockAWSServices):
         self.assertEqual(squad_1.name, body['squads'][0]['name'])
         self.assertEqual(3, len(body['squads'][0]['members']))
 
-    def test_get_current_lobby(self):
+    def test_get_current_lobby_handler(self):
         # create squad, and add to lobby
         squad_name_1 = 'test-squad-1'
         squad_1 = self.player_1.create_squad(squad_name_1)
@@ -236,5 +268,72 @@ class TestPlayer(TestWithMockAWSServices):
         lobby = gamemaster.create_lobby(actual_lobby_name)
         gamemaster.add_squad_to_lobby(actual_lobby_name, squad_1)
 
-        retrieved_lobby = self.player_1.get_current_lobby()
-        self.assertEqual(lobby, retrieved_lobby)
+        event, context = make_api_gateway_event(calling_user=self.player_1)
+        retrieved_lobby = get_current_lobby_handler(event, context)
+        data = LobbySchema().loads(retrieved_lobby['body'])
+        self.assertEqual(lobby.name, data['name'])
+
+    def test_get_current_state(self):
+        # create squad, and add to lobby
+        squad_1 = self.player_1.create_squad('test-squad-1')
+        squad_2 = self.player_3.create_squad('test-squad-2')
+        self.player_1.add_member_to_squad(squad_1, self.player_2)
+
+        # create gamemaster, create lobby, and add squad_1 in
+        lobby_name = 'test-lobby'
+        gamemaster = GameMaster('gm')
+        gamemaster.create_lobby(lobby_name)
+        gamemaster.add_squad_to_lobby(lobby_name, squad_1)
+        gamemaster.add_squad_to_lobby(lobby_name, squad_2)
+
+        state = self.player_1.get_current_state()
+        self.assertEqual(PlayerState.ALIVE, state)
+
+        # start game, kill player
+        gamemaster.start_game(lobby_name)
+        self.player_1.dead()
+
+        state = self.player_1.get_current_state()
+        self.assertEqual(PlayerState.DEAD, state)
+
+    def test_set_dead_set_alive(self):
+        # create two squads
+        squad_name_1 = 'test-squad-1'
+        squad_name_2 = 'test-squad-2'
+
+        squad_1 = self.player_1.create_squad(squad_name_1)
+        squad_2 = self.player_3.create_squad(squad_name_2)
+        self.player_1.add_member_to_squad(squad_1, self.player_2)
+
+        # create gamemaster, create lobby, and both squads in
+        actual_lobby_name = 'test-lobby'
+        gamemaster = GameMaster('gm')
+        lobby = gamemaster.create_lobby(actual_lobby_name)
+        gamemaster.add_squad_to_lobby(actual_lobby_name, squad_1)
+        gamemaster.add_squad_to_lobby(actual_lobby_name, squad_2)
+
+        # try to set player as dead before the game is started
+        with self.assertRaises(LobbyNotStartedException):
+            self.player_1.dead()
+
+        # start game, mark player_1 as dead through handler
+        gamemaster.start_game(lobby.name)
+        event, context = make_api_gateway_event(calling_user=self.player_1)
+        set_dead_handler(event, context)
+        self.player_1.dead()
+
+        # get all players, check that player_1 is dead and all other players are alive
+        players = gamemaster.get_players_in_lobby(lobby.name)
+        for player in players:
+            if player['name'] == self.player_1.username:
+                self.assertEqual(PlayerState.DEAD.value, player['state'])
+            else:
+                self.assertEqual(PlayerState.ALIVE.value, player['state'])
+
+        # revive player_1, assert that everyone is alive again
+        event, context = make_api_gateway_event(calling_user=self.player_1)
+        set_alive_handler(event, context)
+
+        players = gamemaster.get_players_in_lobby(lobby.name)
+        for player in players:
+            self.assertEqual(PlayerState.ALIVE.value, player['state'])

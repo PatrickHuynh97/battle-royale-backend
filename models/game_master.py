@@ -152,8 +152,9 @@ class GameMaster(user.User):
         """
         lobby = lobby_model.Lobby(lobby_name, self)
         lobby.get()
-        if lobby.state:
+        if lobby.state == LobbyState.STARTED:
             raise LobbyAlreadyStartedException("Cannot remove squads from started game")
+        lobby.get_squads()
         lobby.remove_squad(squad)
 
     def get_squads_in_lobby(self, lobby_name):

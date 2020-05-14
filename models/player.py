@@ -2,11 +2,12 @@ from boto3.dynamodb.conditions import Key
 
 from db.dynamodb_connector import DynamoDbConnector
 from exceptions import UserDoesNotExistException, UserDoesNotOwnSquadException, SquadAlreadyExistsException, \
-    UserOwnsSquadException, PlayerNotInLobbyException
+    UserOwnsSquadException, UserNotInLobbyException, SquadInLobbyException
 from models import squad as squad_model
 from models import user
 from models import lobby as lobby_model
 from models import game_master as game_master_model
+from models.enums import PlayerState
 
 
 class Player(user.User):
@@ -79,6 +80,10 @@ class Player(user.User):
         :param access_token: Access token used to verify the user is who the they say they are
         :return: None
         """
+        self.get()
+        if self.lobby_name:
+            raise SquadInLobbyException("User cannot be deleted whilst in a Lobby")
+
         # delete any squads the player owns and cleanup
         squads_to_delete = self.get_owned_squads()
         for squad in squads_to_delete:
@@ -112,7 +117,9 @@ class Player(user.User):
         :return: None
         """
         # make sure Player owns the squad and get latest members
-        squad.get()
+        if squad.in_lobby():
+            raise SquadInLobbyException("Squad cannot be edited whilst in a Lobby")
+
         squad.get_members()
 
         # cannot delete a squad that Player does not own
@@ -128,7 +135,8 @@ class Player(user.User):
         :param new_member: Player object of user to add to squad
         :return: ID of invitation
         """
-        squad.get()
+        if squad.in_lobby():
+            raise SquadInLobbyException("Squad cannot be edited whilst in a Lobby")
 
         # cannot invite users to squads Player does not own
         if squad.owner.username != self.username:
@@ -147,7 +155,8 @@ class Player(user.User):
         :param member_to_remove: member to be removed
         :return: None
         """
-        squad.get()
+        if squad.in_lobby():
+            raise SquadInLobbyException("Squad cannot be edited whilst in a Lobby")
 
         # cannot remove members from squads Player does not own
         if squad.owner.username != self.username:
@@ -156,7 +165,20 @@ class Player(user.User):
         if member_to_remove == squad.owner:
             raise UserOwnsSquadException("Owner cannot be removed from the squad")
 
-        squad.delete_member(member_to_remove)
+        squad.remove_member(member_to_remove)
+
+    def leave_squad(self, squad):
+        """
+        Remove Player from a squad that they do not own
+        :param squad: Squad to remove Player from
+        :return: None
+        """
+        squad.get()
+        squad.get_members()
+        if squad.owner == self:
+            raise UserOwnsSquadException("User cannot leave a squad they own")
+
+        squad.remove_member(self)
 
     def get_owned_squads(self):
         """
@@ -199,6 +221,18 @@ class Player(user.User):
 
         return squads
 
+    def pull_squad_from_lobby(self, squad):
+        """
+        Pull as squad owner by Player from a lobby
+        :param: squad: Squad to pull from current lobby
+        :return: None
+        """
+        squad.get()
+        if squad.owner != self:
+            raise UserDoesNotOwnSquadException(f"User {self.username} is not the owner of squad {squad.name}")
+
+        squad.leave_lobby()
+
     def set_in_lobby(self, lobby):
         """
         If player is in a squad, that squad is in a game lobby, set flag on player to show this
@@ -237,4 +271,33 @@ class Player(user.User):
         if self.lobby_name and self.lobby_owner:
             return lobby_model.Lobby(self.lobby_name, game_master_model.GameMaster(self.lobby_owner))
         else:
-            raise PlayerNotInLobbyException("Player is not currently in a Lobby")
+            raise UserNotInLobbyException("Player is not currently in a Lobby")
+
+    def get_current_state(self):
+        """
+        If the Player is in a lobby that has started, get their current state
+        :return: Player GameState
+        """
+        current_lobby = self.get_current_lobby()
+        player_state = current_lobby.get_player(self)
+        return PlayerState(player_state['state'])
+
+    def dead(self):
+        """
+        Set player as dead if they are in a lobby that has started
+        :return:
+        """
+        current_lobby = self.get_current_lobby()
+        current_lobby.get()  # get basic information about lobby
+        current_lobby.get_squads()
+        current_lobby.set_player_dead(self)
+
+    def alive(self):
+        """
+        Set player as alive if they are in a lobby that has started
+        :return:
+        """
+        current_lobby = self.get_current_lobby()
+        current_lobby.get()  # get basic information about lobby
+        current_lobby.get_squads()
+        current_lobby.set_player_alive(self)

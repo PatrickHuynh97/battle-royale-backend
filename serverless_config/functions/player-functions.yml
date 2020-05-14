@@ -131,3 +131,92 @@ getNotOwnedSquads:
       Ref: CognitoUserPool
     TABLE:
       Fn::GetAtt: [BattleRoyaleTable, Arn]
+
+getCurrentLobby:
+  handler: handlers.player_handlers.get_current_lobby_handler
+  events:
+    - http:
+        path: /player/{username}/lobby
+        request:
+          parameters:
+            paths:
+              username: true
+        method: get
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId:
+            Ref: ApiGatewayAuthorizer
+  environment:
+    USER_POOL_CLIENT_ID:
+      Ref: CognitoUserPoolClient
+    USER_POOL_ID:
+      Ref: CognitoUserPool
+    TABLE:
+      Fn::GetAtt: [BattleRoyaleTable, Arn]
+
+setDead:
+  handler: handlers.player_handlers.set_dead_handler
+  events:
+    - http:
+        path: /player/{username}/dead
+        request:
+          parameters:
+            paths:
+              username: true
+        method: post
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId:
+            Ref: ApiGatewayAuthorizer
+  environment:
+    USER_POOL_CLIENT_ID:
+      Ref: CognitoUserPoolClient
+    USER_POOL_ID:
+      Ref: CognitoUserPool
+    TABLE:
+      Fn::GetAtt: [BattleRoyaleTable, Arn]
+
+setAlive:
+  handler: handlers.player_handlers.set_dead_handler
+  events:
+    - http:
+        path: /player/{username}/alive
+        request:
+          parameters:
+            paths:
+              username: true
+        method: post
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId:
+            Ref: ApiGatewayAuthorizer
+  environment:
+    USER_POOL_CLIENT_ID:
+      Ref: CognitoUserPoolClient
+    USER_POOL_ID:
+      Ref: CognitoUserPool
+    TABLE:
+      Fn::GetAtt: [BattleRoyaleTable, Arn]
+
+pullSquadFromLobby:
+  handler: handlers.player_handlers.pull_squad_from_lobby_handler
+  events:
+    - http:
+        path: /player/{username}/squads/{squadname}/leave-lobby
+        request:
+          parameters:
+            paths:
+              username: true
+              squadname: true
+        method: post
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId:
+            Ref: ApiGatewayAuthorizer
+  environment:
+    USER_POOL_CLIENT_ID:
+      Ref: CognitoUserPoolClient
+    USER_POOL_ID:
+      Ref: CognitoUserPool
+    TABLE:
+      Fn::GetAtt: [BattleRoyaleTable, Arn]
