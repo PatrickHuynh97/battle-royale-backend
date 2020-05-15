@@ -1,0 +1,225 @@
+# SHARED SCHEMAS
+-
+  name: UsernameSchema
+  contentType: "application/json"
+  schema:
+    type: object
+    properties:
+      username:
+        type: string
+
+# AUTHORIZATION FUNCTIONS
+-
+  name: AuthorizationResponse
+  contentType: "application/json"
+  schema:
+    type: object
+    properties:
+      id_token:
+        type: string
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+
+-
+  name: SignUpRequest
+  contentType: "application/json"
+  schema:
+    type: object
+    properties:
+      username:
+        type: string
+      password:
+        type: string
+      email:
+        type: string
+
+-
+  name: SignInRequest
+  contentType: "application/json"
+  schema:
+    type: object
+    properties:
+      username:
+        type: string
+      password:
+        type: string
+
+-
+  name: SignOutRequest
+  contentType: "application/json"
+  schema:
+    type: object
+    properties:
+      access_token:
+        type: string
+
+-
+  name: RefreshTokensRequest
+  contentType: "application/json"
+  schema:
+    type: object
+    properties:
+      refresh_token:
+        type: string
+
+# USER FUNCTIONS
+-
+  name: DeleteUserRequest
+  contentType: "application/json"
+  schema:
+    type: object
+    properties:
+      access_token:
+        type: string
+
+# GAME MASTER FUNCTIONS
+
+-
+  name: SquadSchema
+  contentType: "application/json"
+  schema:
+    type: object
+    properties:
+      owner:
+        type: string
+      name:
+        type: string
+      members:
+        type: array
+        items:
+          $ref: "{{model: UsernameSchema}}"
+
+-
+  name: LobbyRequest
+  contentType: "application/json"
+  schema:
+    type: object
+    properties:
+      name:
+        type: string
+
+-
+  name: LobbySquadRequest
+  contentType: "application/json"
+  schema:
+    type: object
+    properties:
+      squad_name:
+        type: string
+
+-
+  name: CoordinatesSchema
+  contentType: "application/json"
+  schema:
+    type: object
+    properties:
+      x:
+        type: string
+      y:
+        type: string
+
+-
+  name: LobbyGameZoneCoordinatesSchema
+  contentType: "application/json"
+  schema:
+    type: object
+    properties:
+      c1:
+        $ref: "{{model: CoordinatesSchema}}"
+      c2:
+        $ref: "{{model: CoordinatesSchema}}"
+      c3:
+        $ref: "{{model: CoordinatesSchema}}"
+      c4:
+        $ref: "{{model: CoordinatesSchema}}"
+
+-
+  name: LobbySettingsRequest
+  contentType: "application/json"
+  schema:
+    type: object
+    properties:
+      size:
+        type: integer
+      squad_size:
+        type: integer
+      game_zone_coordinates:
+        $ref: "{{model: LobbyGameZoneCoordinatesSchema}}"
+
+-
+  name: GetLobbyResponse
+  contentType: "application/json"
+  schema:
+    type: object
+    properties:
+      name:
+        type: string
+      state:
+        type: string
+      size:
+        type: integer
+      squad_size:
+        type: integer
+      owner:
+        type: string
+      squads:
+        type: array
+        items:
+          $ref: "{{model: SquadSchema}}"
+
+-
+  name: PlayerStateSchema
+  contentType: "application/json"
+  schema:
+    type: object
+    properties:
+      name:
+        type: string
+      state:
+        type: string
+      squad_name:
+        type: string
+
+-
+  name: GetPlayersInLobbyResponse
+  contentType: "application/json"
+  schema:
+    type: array
+    items:
+      $ref: "{{model: PlayerStateSchema}}"
+
+# PLAYER FUNCTIONS
+-
+  name: PlayerSquadRequest
+  contentType: "application/json"
+  schema:
+    type: object
+    properties:
+      name:
+        type: string
+
+-
+  name: PlayerAddUserToSquadRequest
+  contentType: "application/json"
+  schema:
+    type: object
+    properties:
+      username:
+        type: string
+
+-
+  name: GetSquadsResponse
+  contentType: "application/json"
+  schema:
+    type: object
+    properties:
+      name:
+        type: string
+      owner:
+        type: string
+      members:
+        type: array
+        items:
+          $ref: "{{model: UsernameSchema}}"

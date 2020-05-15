@@ -12,6 +12,18 @@ createLobby:
           type: COGNITO_USER_POOLS
           authorizerId:
             Ref: ApiGatewayAuthorizer
+        documentation:
+          summary: "Creates a lobby owned by calling user"
+          tags:
+            - "Game Master Endpoints"
+          requestBody:
+            description: "JSON containing lobby name"
+          requestModels:
+            "application/json": LobbyRequest
+          methodResponses:
+            - statusCode: "200"
+              responseBody:
+                description: "None"
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient
@@ -34,6 +46,20 @@ getLobby:
           type: COGNITO_USER_POOLS
           authorizerId:
             Ref: ApiGatewayAuthorizer
+        documentation:
+          summary: "Gets information about a lobby owned by calling user"
+          tags:
+            - "Game Master Endpoints"
+          requestBody:
+            description: "JSON containing lobby name"
+          requestModels:
+            "application/json": LobbyRequest
+          methodResponses:
+            - statusCode: "200"
+              responseBody:
+                description: "JSON containing information about the requested lobby"
+              responseModels:
+                "application/json": GetLobbyResponse
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient
@@ -56,6 +82,19 @@ deleteLobby:
           type: COGNITO_USER_POOLS
           authorizerId:
             Ref: ApiGatewayAuthorizer
+        documentation:
+          summary: "Deletes a lobby owned by calling user"
+          tags:
+            - "Game Master Endpoints"
+          requestBody:
+            description: "JSON containing lobby name"
+          requestModels:
+            "application/json": LobbyRequest
+          methodResponses:
+            - statusCode: "200"
+              responseBody:
+                description: "None"
+
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient
@@ -79,6 +118,18 @@ addSquadToLobby:
           type: COGNITO_USER_POOLS
           authorizerId:
             Ref: ApiGatewayAuthorizer
+        documentation:
+          summary: "Adds a squad to a lobby owned by calling user"
+          tags:
+            - "Game Master Endpoints"
+          requestBody:
+            description: "JSON containing squad name"
+          requestModels:
+            "application/json": LobbySquadRequest
+          methodResponses:
+            - statusCode: "200"
+              responseBody:
+                description: "None"
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient
@@ -102,6 +153,18 @@ removeSquadFromLobby:
           type: COGNITO_USER_POOLS
           authorizerId:
             Ref: ApiGatewayAuthorizer
+        documentation:
+          summary: "Removes a squad from a lobby owned by calling user"
+          tags:
+            - "Game Master Endpoints"
+          requestBody:
+            description: "JSON containing squad name"
+          requestModels:
+            "application/json": LobbySquadRequest
+          methodResponses:
+            - statusCode: "200"
+              responseBody:
+                description: "None"
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient
@@ -125,6 +188,18 @@ getPlayersInLobby:
           type: COGNITO_USER_POOLS
           authorizerId:
             Ref: ApiGatewayAuthorizer
+        documentation:
+          summary: "Gets a list of players in a lobby owned by calling user"
+          tags:
+            - "Game Master Endpoints"
+          requestBody:
+            description: "JSON containing squad name"
+          methodResponses:
+            - statusCode: "200"
+              responseBody:
+                description: "List of Players in the lobby and their information"
+              responseModels:
+                "application/json": GetPlayersInLobbyResponse
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient
@@ -148,6 +223,20 @@ updateLobby:
           type: COGNITO_USER_POOLS
           authorizerId:
             Ref: ApiGatewayAuthorizer
+        documentation:
+          summary: "Update settings of a lobby owned by calling user"
+          tags:
+            - "Game Master Endpoints"
+          requestBody:
+            description: "JSON containing fields to update"
+          requestModels:
+            "application/json": LobbySettingsRequest
+          methodResponses:
+            - statusCode: "200"
+              responseBody:
+                description: "List of Players in the lobby and their information"
+              responseModels:
+                "application/json": GetPlayersInLobbyResponse
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient
@@ -171,6 +260,14 @@ startLobby:
           type: COGNITO_USER_POOLS
           authorizerId:
             Ref: ApiGatewayAuthorizer
+        documentation:
+          summary: "Start a lobby owned by calling user"
+          tags:
+            - "Game Master Endpoints"
+          methodResponses:
+            - statusCode: "200"
+              responseBody:
+                description: "None"
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient
@@ -194,6 +291,14 @@ endLobby:
           type: COGNITO_USER_POOLS
           authorizerId:
             Ref: ApiGatewayAuthorizer
+        documentation:
+          summary: "End a lobby owned by calling user"
+          tags:
+            - "Game Master Endpoints"
+          methodResponses:
+            - statusCode: "200"
+              responseBody:
+                description: "None"
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient

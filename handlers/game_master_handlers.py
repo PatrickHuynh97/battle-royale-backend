@@ -79,6 +79,20 @@ def remove_squad_from_lobby_handler(event, context):
     GameMaster(username).remove_squad_from_lobby(lobby_name, Squad(squad_name))
 
 
+@endpoint(response_schema=LobbyPlayerListSchema)
+def get_players_in_lobby_handler(event, context):
+
+    """
+    Handler for getting every player in the Lobby and their current state
+    """
+    username = event['calling_user']
+    lobby_name = event['pathParameters']['lobby']
+
+    players = GameMaster(username).get_players_in_lobby(lobby_name)
+
+    return dict(players=players)
+
+
 @endpoint()
 def update_lobby_handler(event, context):
     """
@@ -115,17 +129,3 @@ def end_lobby_handler(event, context):
     lobby_name = event['pathParameters']['lobby']
 
     GameMaster(username).end_game(lobby_name)
-
-
-@endpoint(response_schema=LobbyPlayerListSchema)
-def get_players_in_lobby_handler(event, context):
-
-    """
-    Handler for getting every player in the Lobby and their current state
-    """
-    username = event['calling_user']
-    lobby_name = event['pathParameters']['lobby']
-
-    players = GameMaster(username).get_players_in_lobby(lobby_name)
-
-    return dict(players=players)

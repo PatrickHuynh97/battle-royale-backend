@@ -8,6 +8,16 @@ deleteUser:
           type: COGNITO_USER_POOLS
           authorizerId:
             Ref: ApiGatewayAuthorizer
+        documentation:
+          summary: "Delete calling user from the Battle Royale system along with all their squads"
+          tags:
+            - "Authorization"  # put this with authorization since it uses access token, for now
+          requestModels:
+            "application/json": DeleteUserRequest
+          methodResponses:
+            - statusCode: "200"
+              responseBody:
+                description: "None"
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient

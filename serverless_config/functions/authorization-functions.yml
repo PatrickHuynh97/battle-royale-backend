@@ -4,6 +4,19 @@ signUp:
       - http:
           path: /user_management/sign_up
           method: post
+          documentation:
+            summary: "Sign up a new User"
+            tags:
+              - "Authorization"
+            requestBody:
+              description: "JSON containing Username, Password and Email. Email is not used for anything"
+            requestModels:
+              "application/json": SignUpRequest
+            methodResponses:
+              - statusCode: "200"
+                responseBody:
+                  description: "None"
+
     environment:
       USER_POOL_CLIENT_ID:
         Ref: CognitoUserPoolClient
@@ -18,6 +31,20 @@ signIn:
     - http:
         path: /user_management/sign_in
         method: post
+        documentation:
+          summary: "Sign in a User"
+          tags:
+            - "Authorization"
+          requestBody:
+            description: "JSON containing Username and Password"
+          requestModels:
+            "application/json": SignInRequest
+          methodResponses:
+            - statusCode: "200"
+              responseBody:
+                description: "Contains tokens used for using the rest of the API"
+              responseModels:
+                "application/json": AuthorizationResponse
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient
@@ -34,6 +61,18 @@ signOut:
           type: COGNITO_USER_POOLS
           authorizerId:
             Ref: ApiGatewayAuthorizer
+        documentation:
+          summary: "Sign out a User"
+          tags:
+            - "Authorization"
+          requestBody:
+            description: "JSON containing Access token"
+          requestModels:
+            "application/json": SignOutRequest
+          methodResponses:
+            - statusCode: "200"
+              responseBody:
+                description: "None"
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient
@@ -46,6 +85,18 @@ refreshTokens:
     - http:
         path: /user_management/refresh
         method: post
+        documentation:
+          summary: "Refreshes a User's tokens"
+          tags:
+            - "Authorization"
+          requestBody:
+            description: "JSON containing Refresh token"
+          requestModels:
+            "application/json": RefreshTokensRequest
+          methodResponses:
+            - statusCode: "200"
+              responseBody:
+                description: "None"
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient

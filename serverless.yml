@@ -1,6 +1,22 @@
 custom:
   project:
     name: battle-royale
+  documentation:
+    info:
+      version: "0.5"
+      title: "Battle Royale API"
+      description: "This is the API for the currently unnamed Battle Royale IRL app"
+      contact:
+        name: "Patrick Huynh"
+        email: "patrickhuynh97@gmail.com"
+    tags:
+      - name: "Authorization"
+        description: "Endpoints for authorizing a Player or Gamemaster"
+      - name: "Player Endpoints"
+        description: "Endpoints where the calling user is modelled as a Player"
+      - name: "Game Master Endpoints"
+        description: "Endpoints where the calling user is modelled as a GameMaster"
+    models: ${file(serverless_config/function_documentation/function_documentation.yml)} # todo break this up into smaller files
 
 service:
   name: api-service
@@ -42,7 +58,7 @@ package:
     - 'node_modules'
 plugins:
   - serverless-python-requirements
-
+  - serverless-aws-documentation
 resources:
   - ${file(serverless_config/resources/dynamo-db.yml)}
   - ${file(serverless_config/resources/cognito-user-pool.yml)}
