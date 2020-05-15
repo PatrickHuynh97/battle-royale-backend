@@ -167,3 +167,15 @@ class NotEnoughSquadsException(LobbyException):
 class PlayerAlreadyInLobbyException(LobbyException):
     tag = __qualname__
     error_code = 400
+
+
+class WebSocketException(ApiException):
+    pass
+
+
+class LiveDataConnectionException(WebSocketException):
+    pass
+
+
+class WebSocketDisconnectedException(WebSocketException):
+    pass

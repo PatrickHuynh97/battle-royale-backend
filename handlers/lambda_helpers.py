@@ -5,17 +5,24 @@ from json import JSONDecodeError
 from exceptions import ApiException
 
 
-def endpoint(response_schema=None):
+def endpoint(response_schema=None, request_schema=None):
     """
     Adds a new endpoint to the API
     :param response_schema: A schema specifying the output of the function. If None, no validation is performed
+    :param request_schema: A schema specifying the required structure of the request.
     """
 
     def lambda_wrapper(func):
         @wraps(func)
         def wrapper(event, context):
+
             set_calling_user(event)
-            preload_body(event)
+
+            if request_schema:
+                request_schema().loads(event['body'])
+            else:
+                preload_body(event)
+
             try:
                 result = func(event, context)
                 # if API exception was raised, catch and format for Lambda

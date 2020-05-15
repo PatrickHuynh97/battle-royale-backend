@@ -1,6 +1,7 @@
 from db.dynamodb_connector import DynamoDbConnector
-from exceptions import UserDoesNotExistException, LobbyDoesNotExistException, LobbyAlreadyStartedException
-from models.enums import LobbyState
+from exceptions import UserDoesNotExistException, LobbyDoesNotExistException, LobbyAlreadyStartedException, \
+    UserNotInLobbyException
+from enums import LobbyState
 from models import lobby as lobby_model
 from models import user
 
@@ -14,6 +15,7 @@ class GameMaster(user.User):
         super().__init__()
         self.username = username
         self.table = DynamoDbConnector.get_table()
+        self.lobby = None  # only set if game master is in a lobby
 
     def __eq__(self, other):
         """If a Game Master object has the same username as another Game Master object, they are the same Game Master"""
@@ -37,9 +39,7 @@ class GameMaster(user.User):
         if not gm:
             raise UserDoesNotExistException("Game Master with username {} does not exist".format(self.username))
 
-        return {
-            'username': gm['pk']
-        }
+        self.lobby = lobby_model.Lobby(gm.get('lobby-name'), gm.get('lobby-owner'))
 
     def exists(self):
         """
@@ -92,6 +92,8 @@ class GameMaster(user.User):
         """
         lobby = lobby_model.Lobby(lobby_name, owner=self)
         lobby.put(size=size, squad_size=squad_size)
+        self.set_in_lobby(lobby)
+        self.lobby = lobby
         return lobby
 
     def delete_lobby(self, lobby_name):
@@ -102,6 +104,7 @@ class GameMaster(user.User):
         """
         lobby = lobby_model.Lobby(lobby_name, owner=self)
         lobby.delete()
+        self.set_no_lobby()
         return lobby
 
     def get_lobby(self, lobby_name):
@@ -114,18 +117,59 @@ class GameMaster(user.User):
         lobby.get()
         return lobby
 
-    def update_lobby(self, lobby_name, size=None, squad_size=None):
+    def get_current_lobby(self):
+        """
+        Get name of current lobby game master is in
+        :return: Game lobby object
+        """
+        self.get()
+        if self.lobby.name and self.lobby.owner == self.username:
+            return lobby_model.Lobby(self.lobby.name, self)
+        else:
+            raise UserNotInLobbyException("Game Master is not currently in a Lobby")
+
+    def update_lobby(self, lobby_name, size=None, squad_size=None, game_zone_coordinates=None):
         """
         Update a lobby owned by Game Master
         :param lobby_name: name of lobby to update
         :param size: size of lobby
         :param squad_size: size of squads allowed in lobby
+        :param game_zone_coordinates: four coordinates making up the game zone
         """
         lobby = lobby_model.Lobby(lobby_name, owner=self)
         if not lobby.exists():
             raise LobbyDoesNotExistException
-        lobby.update(size, squad_size)
+        lobby.update(size, squad_size, game_zone_coordinates)
         return lobby
+
+    def set_in_lobby(self, lobby):
+        """
+        If Game Master has created a Lobby set flag
+        :param lobby: lobby the Game Master has created
+        :return:
+        """
+
+        self.table.update_item(
+            Key={
+                'pk': self.username,
+                'sk': f'USER'
+            },
+            AttributeUpdates={'lobby-name': dict(Value=lobby.name),
+                              'lobby-owner': dict(Value=self.username)})
+
+    def set_no_lobby(self):
+        """
+        If Game Master has disbanded a Lobby set flag
+        :return:
+        """
+
+        self.table.update_item(
+            Key={
+                'pk': self.username,
+                'sk': f'USER'
+            },
+            AttributeUpdates={'lobby-name': dict(Value=None),
+                              'lobby-owner': dict(Value=None)})
 
     def add_squad_to_lobby(self, lobby_name, squad):
         """

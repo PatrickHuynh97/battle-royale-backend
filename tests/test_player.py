@@ -8,7 +8,7 @@ from handlers import authorization_handlers
 from handlers.player_handlers import get_owned_squads_handler, set_dead_handler, set_alive_handler, \
     get_current_lobby_handler
 from handlers.schemas import LobbySchema
-from models.enums import PlayerState
+from enums import PlayerState
 from models.game_master import GameMaster
 from models.player import Player
 from models.squad import Squad

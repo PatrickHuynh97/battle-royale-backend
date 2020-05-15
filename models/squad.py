@@ -175,7 +175,7 @@ class Squad:
 
         # set each player in squad as in lobby
         for player in self.members:
-            player.set_in_lobby(lobby)
+            player.set_in_lobby(lobby, self)
 
     def set_no_lobby(self):
         """

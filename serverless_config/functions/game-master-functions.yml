@@ -110,6 +110,29 @@ removeSquadFromLobby:
     TABLE:
       Fn::GetAtt: [BattleRoyaleTable, Arn]
 
+getPlayersInLobby:
+  handler: handlers.game_master_handlers.get_players_in_lobby_handler
+  events:
+    - http:
+        path: /game-master/{username}/lobby/{lobby}/players
+        request:
+          parameters:
+            paths:
+              username: true
+              lobby: true
+        method: post
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId:
+            Ref: ApiGatewayAuthorizer
+  environment:
+    USER_POOL_CLIENT_ID:
+      Ref: CognitoUserPoolClient
+    USER_POOL_ID:
+      Ref: CognitoUserPool
+    TABLE:
+      Fn::GetAtt: [BattleRoyaleTable, Arn]
+
 updateLobby:
   handler: handlers.game_master_handlers.update_lobby_handler
   events:

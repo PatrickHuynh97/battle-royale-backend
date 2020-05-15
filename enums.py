@@ -16,3 +16,12 @@ class PlayerState(Enum):
     """
     ALIVE = 'alive'
     DEAD = 'dead'
+
+
+class WebSocketEventType(Enum):
+    CONNECT = 'connect'
+    DISCONNECT = 'disconnect'
+
+
+class GameMasterMessageType(Enum):
+    EXAMPLE = 'example'

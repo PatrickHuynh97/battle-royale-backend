@@ -7,7 +7,7 @@ from models import squad as squad_model
 from models import user
 from models import lobby as lobby_model
 from models import game_master as game_master_model
-from models.enums import PlayerState
+from enums import PlayerState
 
 
 class Player(user.User):
@@ -18,8 +18,8 @@ class Player(user.User):
     def __init__(self, username: str):
         super().__init__()
         self.username = username
-        self.lobby_name = None
-        self.lobby_owner = None
+        self.lobby = None
+        self.squad = None
         self.table = DynamoDbConnector.get_table()
 
     def __eq__(self, other):
@@ -44,8 +44,9 @@ class Player(user.User):
         if not player:
             raise UserDoesNotExistException("Player with username {} does not exist".format(self.username))
 
-        self.lobby_name = player['lobby-name']
-        self.lobby_owner = player['lobby-owner']
+        self.lobby = lobby_model.Lobby(player.get('lobby-name'),
+                                       game_master_model.GameMaster(player.get('lobby-owner')))
+        self.squad = squad_model.Squad(player.get('squad'))
 
     def exists(self):
         """
@@ -81,7 +82,7 @@ class Player(user.User):
         :return: None
         """
         self.get()
-        if self.lobby_name:
+        if self.lobby.name:
             raise SquadInLobbyException("User cannot be deleted whilst in a Lobby")
 
         # delete any squads the player owns and cleanup
@@ -233,10 +234,11 @@ class Player(user.User):
 
         squad.leave_lobby()
 
-    def set_in_lobby(self, lobby):
+    def set_in_lobby(self, lobby, squad):
         """
         If player is in a squad, that squad is in a game lobby, set flag on player to show this
         :param lobby: Lobby object of lobby player is in which has started
+        :param squad: squad object of lobby player is in the lobby with
         :return:
         """
 
@@ -246,7 +248,8 @@ class Player(user.User):
                 'sk': f'USER'
             },
             AttributeUpdates={'lobby-name': dict(Value=lobby.name),
-                              'lobby-owner': dict(Value=lobby.owner.username)})
+                              'lobby-owner': dict(Value=lobby.owner.username),
+                              'squad': dict(Value=squad.name)})
 
     def set_no_lobby(self):
         """
@@ -260,7 +263,9 @@ class Player(user.User):
                 'pk': self.username,
                 'sk': f'USER'
             },
-            AttributeUpdates={'lobby-name': dict(Value=None)})
+            AttributeUpdates={'lobby-name': dict(Value=None),
+                              'lobby-owner': dict(Value=None),
+                              'squad': dict(Value=None)})
 
     def get_current_lobby(self):
         """
@@ -268,8 +273,8 @@ class Player(user.User):
         :return: Game lobby information
         """
         self.get()
-        if self.lobby_name and self.lobby_owner:
-            return lobby_model.Lobby(self.lobby_name, game_master_model.GameMaster(self.lobby_owner))
+        if self.lobby.name and self.lobby.owner:
+            return lobby_model.Lobby(self.lobby.name, game_master_model.GameMaster(self.lobby.owner.username))
         else:
             raise UserNotInLobbyException("Player is not currently in a Lobby")
 

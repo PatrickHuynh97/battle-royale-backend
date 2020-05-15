@@ -2,7 +2,7 @@ from exceptions import SquadInLobbyException, SquadTooBigException, LobbyFullExc
     LobbyAlreadyStartedException, PlayerAlreadyInLobbyException
 from handlers import game_master_handlers
 from handlers.schemas import LobbySchema, LobbyPlayerListSchema
-from models.enums import LobbyState
+from enums import LobbyState
 from models.game_master import GameMaster
 from models.player import Player
 from tests.helper_functions import make_api_gateway_event, create_test_game_masters, create_test_players, \
@@ -94,7 +94,7 @@ class TestGameMaster(TestWithMockAWSServices):
         self.assertEqual(lobby_name, self.squad_1.lobby_name)
         for member in self.squad_1.members:
             member.get()
-            self.assertEqual(lobby_name, member.lobby_name)
+            self.assertEqual(lobby_name, member.lobby.name)
 
     def test_add_duplicate_squad_to_lobby(self):
         # create a lobby
@@ -206,12 +206,18 @@ class TestGameMaster(TestWithMockAWSServices):
         # update lobby settings
         new_lobby_size = 15
         new_squad_size = 4
-        self.game_master_1.update_lobby(lobby_name, size=new_lobby_size, squad_size=new_squad_size)
+        game_zone_coordinates = dict(c1=dict(x='1', y='12'), c2=dict(x='4', y='12'),
+                                     c3=dict(x='4', y='12'), c4=dict(x='12', y='12'))
+        self.game_master_1.update_lobby(lobby_name,
+                                        size=new_lobby_size,
+                                        squad_size=new_squad_size,
+                                        game_zone_coordinates=game_zone_coordinates)
 
         # get new lobby
         lobby = self.game_master_1.get_lobby(lobby_name)
         self.assertEqual(new_lobby_size, lobby.size)
         self.assertEqual(new_squad_size, lobby.squad_size)
+        self.assertEqual(game_zone_coordinates, lobby.game_zone_coordinates)
 
     def test_full_game_flow(self):
         # create a lobby, add some squads
@@ -279,11 +285,11 @@ class TestGameMaster(TestWithMockAWSServices):
         # start game
         self.game_master_1.get_players_in_lobby(lobby_name)
         event, context = make_api_gateway_event(calling_user=self.game_master_1,
-                                                body={'name': lobby_name})
+                                                path_params={'lobby': lobby_name})
         res = game_master_handlers.get_players_in_lobby_handler(event, context)
         players = LobbyPlayerListSchema().loads(res['body'])['players']
         self.assertTrue(6, len(players))
 
         player = Player(players[0]['name'])
         player.get()
-        self.assertEqual(lobby_name, player.lobby_name)
+        self.assertEqual(lobby_name, player.lobby.name)

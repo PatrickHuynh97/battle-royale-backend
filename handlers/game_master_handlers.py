@@ -82,7 +82,7 @@ def remove_squad_from_lobby_handler(event, context):
 @endpoint()
 def update_lobby_handler(event, context):
     """
-    Handler for updating lobby settings, such as lobby size, squad size.
+    Handler for updating lobby settings, such as lobby size, squad size, game zone coordinates
     """
     username = event['calling_user']
     lobby_name = event['pathParameters']['lobby']
@@ -91,7 +91,8 @@ def update_lobby_handler(event, context):
 
     GameMaster(username).update_lobby(lobby_name,
                                       size=body.get('size'),
-                                      squad_size=body.get('squad_size'))
+                                      squad_size=body.get('squad_size'),
+                                      game_zone_coordinates=body.get('game_zone_coordinates'))
 
 
 @endpoint()
@@ -123,7 +124,7 @@ def get_players_in_lobby_handler(event, context):
     Handler for getting every player in the Lobby and their current state
     """
     username = event['calling_user']
-    lobby_name = event['body']['name']
+    lobby_name = event['pathParameters']['lobby']
 
     players = GameMaster(username).get_players_in_lobby(lobby_name)
 

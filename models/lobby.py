@@ -1,12 +1,12 @@
 from boto3.dynamodb.conditions import Key
-
 from db.dynamodb_connector import DynamoDbConnector
 from exceptions import LobbyDoesNotExistException, SquadInLobbyException, SquadNotInLobbyException, \
     SquadTooBigException, LobbyFullException, LobbyAlreadyStartedException, NotEnoughSquadsException, \
     PlayerAlreadyInLobbyException, LobbyNotStartedException, UserNotInLobbyException
 from models import game_master
-from models.enums import LobbyState, PlayerState
+from enums import LobbyState, PlayerState
 from models import squad as squad_model
+from websockets import connection_manager
 
 
 class Lobby:
@@ -17,9 +17,13 @@ class Lobby:
     def __init__(self, name, owner):
         self.name = name
         self.owner = owner
+        self.unique_id = None
         self.size = None
         self.squad_size = None
         self.state = None
+        self.game_zone_coordinates = None
+        self.current_circle = None
+        self.next_circle = None
         self.squads = []
         self.table = DynamoDbConnector.get_table()
 
@@ -29,6 +33,18 @@ class Lobby:
             return self.name == other.name and self.owner == other.owner
         return False
 
+    @staticmethod
+    def generate_unique_id():
+        """
+        Generate a random alphanumeric id for the game lobby
+        :return:
+        """
+        import random
+        import string
+
+        letters_and_digits = string.ascii_letters + string.digits
+        return ''.join((random.choice(letters_and_digits) for i in range(12)))
+
     def put(self, size, squad_size):
         """
         Inserts a new lobby into the database
@@ -36,11 +52,12 @@ class Lobby:
         :param squad_size: Size of squads allowed in lobby.
         :return: None
         """
-
+        unique_id = self.generate_unique_id()
         item = {
             'pk': self.name,
             'sk': f'OWNER#{self.owner.username}',
             'lsi': f'LOBBY',
+            'lsi-2': unique_id,
             'size': size,
             'squad-size': squad_size,
             'state': LobbyState.NOT_STARTED.value
@@ -49,7 +66,7 @@ class Lobby:
         self.table.put_item(
             Item=item
         )
-
+        self.unique_id = unique_id
         self.size = size
         self.squad_size = squad_size
 
@@ -70,9 +87,11 @@ class Lobby:
             raise LobbyDoesNotExistException("Lobby with name {} does not exist".format(self.name))
 
         self.owner = game_master.GameMaster(lobby['sk'].split('#')[1])
+        self.unique_id = lobby.get('lsi-2')
         self.size = lobby.get('size')
         self.squad_size = lobby.get('squad-size')
         self.state = LobbyState(lobby.get('state'))
+        self.game_zone_coordinates = lobby.get('game-zone-coordinates')
 
     def exists(self):
         """
@@ -104,28 +123,33 @@ class Lobby:
             }
         )
 
-    def update(self, size: int = None, squad_size: int = None):
+    def update(self, size: int = None,
+               squad_size: int = None,
+               game_zone_coordinates: dict = None):
         """
         Update lobby information
         :param size: New size of lobby
         :param squad_size: New squad size allowed in lobby
+        :param game_zone_coordinates: dict containing c1, c2, c3 and c4, coordinates which make up the entire game zone
         """
 
         attributes_to_update = dict()
         if size:
             attributes_to_update['size'] = dict(Value=size)
+            self.size = size
         if squad_size:
             attributes_to_update['squad-size'] = dict(Value=squad_size)
-
-        self.table.update_item(
-            Key={
-                'pk': self.name,
-                'sk': f'OWNER#{self.owner.username}'
-            },
-            AttributeUpdates=attributes_to_update)
-
-        self.size = size
-        self.squad_size = squad_size
+            self.squad_size = squad_size
+        if game_zone_coordinates:
+            attributes_to_update['game-zone-coordinates'] = dict(Value=game_zone_coordinates)
+            self.game_zone_coordinates = game_zone_coordinates
+        if attributes_to_update:
+            self.table.update_item(
+                Key={
+                    'pk': self.name,
+                    'sk': f'OWNER#{self.owner.username}'
+                },
+                AttributeUpdates=attributes_to_update)
 
     def start(self):
         """
@@ -321,6 +345,9 @@ class Lobby:
             },
             AttributeUpdates={f'PLAYER#{player.username}': dict(Value=PlayerState.DEAD.value)})
 
+        # notify the game master that Player is dead through game session
+        connection_manager.ConnectionManager().notify_player_dead(player)
+
     def set_player_alive(self, player):
         """
         Set a player as alive in the game lobby. Assumes lobby.get() and lobby.get_squads() has been called
@@ -340,3 +367,28 @@ class Lobby:
                 'sk': f'SQUAD#{squad.name}'
             },
             AttributeUpdates={f'PLAYER#{player.username}': dict(Value=PlayerState.ALIVE.value)})
+
+    def set_current_circle(self, circle_centre=None, circle_radius=None):
+        """
+        Sets the current circle position. If centre and radius are not given, they will be randomly generated
+        :param circle_centre: dict containing x,y coordinates of centre of circle
+        :param circle_radius: radius of the circle
+        :return: None
+        """
+        # todo
+
+    def set_next_circle(self, circle_centre=None, circle_radius=None):
+        """
+        Sets the next circle position. If centre and radius are not given, they will be randomly generated
+        :param circle_centre: dict containing x,y coordinates of centre of the next circle
+        :param circle_radius: radius of the next circle
+        :return: None
+        """
+        # todo
+
+    def close_current_circle(self):
+        """
+        Begins the closing of the current circle, to become the next circle
+        :return: None
+        """
+        # todo
