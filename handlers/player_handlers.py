@@ -105,6 +105,7 @@ def get_current_lobby_handler(event, context):
             'state': lobby.state.value,
             'size': lobby.size,
             'squad_size': lobby.squad_size,
+            'game_zone_coordinates': lobby.game_zone_coordinates,
             'squads': [dict(name=squad.name,
                             owner=squad.owner.username,
                             members=[dict(username=member.username)

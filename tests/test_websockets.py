@@ -291,7 +291,7 @@ class TestWebsocketHandlers(TestWithMockAWSServices):
         # push location message through websocket from self.p_1
         long = "1231.123"
         lat = "11.123"
-        player_location = dict(long=long, lat=lat)
+        player_location = dict(longitude=long, latitude=lat)
         location_event = self.create_fake_websocket_event(p_1_connection_id, body=player_location)
 
         def mock_send(connection_id, data):

@@ -1,6 +1,9 @@
+import json
+
 from exceptions import SquadInLobbyException, SquadTooBigException, LobbyFullException, \
     LobbyAlreadyStartedException, PlayerAlreadyInLobbyException
 from handlers import game_master_handlers
+from handlers.game_master_handlers import get_lobby_handler
 from handlers.schemas import LobbySchema, LobbyPlayerListSchema
 from enums import LobbyState
 from models.game_master import GameMaster
@@ -41,10 +44,22 @@ class TestGameMaster(TestWithMockAWSServices):
         squad_size = 3
         self.game_master_1.create_lobby(lobby_name, size=lobby_size, squad_size=squad_size)
 
-        lobby = self.game_master_1.get_lobby(lobby_name)
-        self.assertEqual(self.game_master_1, lobby.owner)
-        self.assertEqual(lobby_size, lobby.size)
-        self.assertEqual(squad_size, lobby.squad_size)
+        game_zone_coordinates = dict(c1=dict(x='1.125', y='12.123'), c2=dict(x='4.123', y='12.123'),
+                                     c3=dict(x='4.123', y='12.123'), c4=dict(x='12.123', y='12.123'))
+        game_zone_coordinates_as_float = dict(c1=dict(x=1.125, y=12.123), c2=dict(x=4.123, y=12.123),
+                                              c3=dict(x=4.123, y=12.123), c4=dict(x=12.123, y=12.123))
+        self.game_master_1.update_lobby(lobby_name,
+                                        game_zone_coordinates=game_zone_coordinates)
+
+        # get new lobby
+        event, context = make_api_gateway_event(body={'name': lobby_name}, calling_user=self.game_master_1)
+        res = get_lobby_handler(event, context)
+        body = json.loads(res['body'])
+
+        self.assertEqual(self.game_master_1.username, body['owner'])
+        self.assertEqual(lobby_size, body['size'])
+        self.assertEqual(squad_size, body['squad_size'])
+        self.assertEqual(game_zone_coordinates_as_float, body['game_zone_coordinates'])
 
     def test_get_lobby_handler(self):
         # test getting a lobby
@@ -213,7 +228,6 @@ class TestGameMaster(TestWithMockAWSServices):
                                         squad_size=new_squad_size,
                                         game_zone_coordinates=game_zone_coordinates)
 
-        # get new lobby
         lobby = self.game_master_1.get_lobby(lobby_name)
         self.assertEqual(new_lobby_size, lobby.size)
         self.assertEqual(new_squad_size, lobby.squad_size)

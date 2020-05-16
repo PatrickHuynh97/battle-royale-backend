@@ -95,8 +95,8 @@ def player_location_message_handler(event, context):
     player = connection_manager.get_player(connection_id)
     player.get()
 
-    player_long = event['body']['long']
-    player_lat = event['body']['lat']
+    player_long = event['body']['longitude']
+    player_lat = event['body']['latitude']
 
     payload = dict(name=player.username, longitude=player_long, latitude=player_lat)
 

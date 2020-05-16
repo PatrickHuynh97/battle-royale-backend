@@ -116,9 +116,9 @@
     type: object
     properties:
       x:
-        type: string
+        type: number
       y:
-        type: string
+        type: number
 
 -
   name: LobbyGameZoneCoordinatesSchema
@@ -164,6 +164,8 @@
         type: integer
       owner:
         type: string
+      game_zone_coordinates:
+        $ref: "{{model: LobbyGameZoneCoordinatesSchema}}"
       squads:
         type: array
         items:

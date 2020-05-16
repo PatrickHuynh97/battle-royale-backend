@@ -139,11 +139,6 @@ class SquadNotInLobbyException(LobbyException):
     error_code = 400
 
 
-class GameMasterNotOwnLobbyException(LobbyException):
-    tag = __qualname__
-    error_code = 400
-
-
 class LobbySettingsNotGivenException(LobbyException):
     tag = __qualname__
     error_code = 400
