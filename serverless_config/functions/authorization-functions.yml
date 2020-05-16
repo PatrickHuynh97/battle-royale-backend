@@ -16,7 +16,7 @@ signUp:
               - statusCode: "200"
                 responseBody:
                   description: "None"
-
+              - ${self:custom.commonModelSchemaFragments.AuthorizationException}
     environment:
       USER_POOL_CLIENT_ID:
         Ref: CognitoUserPoolClient
@@ -45,6 +45,7 @@ signIn:
                 description: "Contains tokens used for using the rest of the API"
               responseModels:
                 "application/json": AuthorizationResponse
+            - ${self:custom.commonModelSchemaFragments.AuthorizationException}
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient
@@ -73,6 +74,7 @@ signOut:
             - statusCode: "200"
               responseBody:
                 description: "None"
+            - ${self:custom.commonModelSchemaFragments.AuthorizationException}
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient
@@ -97,6 +99,7 @@ refreshTokens:
             - statusCode: "200"
               responseBody:
                 description: "None"
+            - ${self:custom.commonModelSchemaFragments.AuthorizationException}
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient

@@ -1,10 +1,12 @@
 import json
 import os
+from datetime import datetime
+
 import boto3
 from boto3.dynamodb.conditions import Key
 from db.dynamodb_connector import DynamoDbConnector
 from enums import LobbyState, PlayerState
-from exceptions import UserNotInLobbyException, LobbyNotStartedException
+from exceptions import PlayerNotInLobbyException, LobbyNotStartedException
 from models import game_master as game_master_model
 from models import player as player_model
 
@@ -13,6 +15,43 @@ class ConnectionManager:
 
     def __init__(self):
         self.table = DynamoDbConnector.get_table()
+
+    def connect_unauthorized(self, connection_id):
+        """
+        Connect an anonymous, authorized user. User must then authenticate themselves after establishing this connection
+        or they are forcefully disconnected. # todo cron job to clean this stuff up
+        :param connection_id: Id of websocket connection
+        """
+        # save connection_id of unauthorized user
+        _ = self.table.put_item(
+            Item={
+                'pk': 'CONNECTION#UNAUTHORIZED',
+                'sk': connection_id,
+                'lsi': str(datetime.now()),
+                'lsi-2': 'UNAUTHORIZED'
+            }
+        )
+
+    def get_unauthorized_connections(self):
+        response = self.table.query(
+            IndexName='lsi-2',
+            Select='ALL_ATTRIBUTES',
+            KeyConditionExpression=Key('pk').eq('CONNECTION#UNAUTHORIZED') & Key('lsi-2').eq('UNAUTHORIZED')
+        )
+        return [item['sk'] for item in response['Items']]
+
+    def disconnect_unauthorized_connection(self, connection_id):
+        """
+        Disconnects an authorized user.
+        :param connection_id: Id of websocket connection
+        """
+        # delete connection_id of unauthorized user
+        _ = self.table.delete_item(
+            Key={
+                'pk': 'CONNECTION#UNAUTHORIZED',
+                'sk': connection_id
+            }
+        )
 
     def get_player_connections(self, lobby):
         """
@@ -28,12 +67,15 @@ class ConnectionManager:
             dict(name=player['sk'].split('#')[3], squad=player['lsi'].split('#')[1]) for player in response
         ]
 
-    def connect(self, connection_id, username):
+    def authorize_connection(self, connection_id, username):
         """
         Connect a User to the right game session depending on their current state.
         :param connection_id: Id of websocket connection
         :param username: username of User trying to connect to a game session
         """
+        # remove unauthorized connection
+        self.disconnect_unauthorized_connection(connection_id)
+
         # check if username is a player and they are in a lobby
         try:
             player = player_model.Player(username)
@@ -45,12 +87,12 @@ class ConnectionManager:
 
             # if the user is the owner of the lobby they are in, then they are a gamemaster
             if player.lobby.owner == player.username:
-                raise UserNotInLobbyException
+                raise PlayerNotInLobbyException
 
             self.handle_player_connect(player, lobby, connection_id)
 
         # User is not a player. Check if username belongs to a GameMaster
-        except UserNotInLobbyException:
+        except PlayerNotInLobbyException:
             try:
                 gamemaster = game_master_model.GameMaster(username)
                 lobby = gamemaster.get_current_lobby()  # throws UserNotInLobbyException if they're not in a lobby
@@ -62,8 +104,8 @@ class ConnectionManager:
                 self.handle_game_master_connect(gamemaster, lobby, connection_id)
 
             # User is neither a Player nor a GameMaster in a started Lobby
-            except UserNotInLobbyException:
-                raise UserNotInLobbyException(f"User with username {username} is not in a started Lobby")
+            except PlayerNotInLobbyException:
+                raise PlayerNotInLobbyException(f"User with username {username} is not in a started Lobby")
 
     def handle_player_connect(self, player, lobby, connection_id):
         """
@@ -107,6 +149,8 @@ class ConnectionManager:
         Disconnect an active connection
         :param connection_id: ID of connection to be disconnected
         """
+        self.disconnect_unauthorized_connection(connection_id)
+
         # first retrieve connection from local secondary index
         response = self.table.query(
             IndexName='lsi-2',
@@ -114,7 +158,7 @@ class ConnectionManager:
             KeyConditionExpression=Key('pk').eq('CONNECTION') & Key('lsi-2').eq(connection_id)
         )
 
-        # Should only be 1 result from this query
+        # Should only be 1 result from this query, otherwise the user is not connected
         connections = response.get('Items')
         if not connections:
             return
@@ -137,7 +181,7 @@ class ConnectionManager:
 
         response = self.table.query(
             IndexName='lsi',
-            KeyConditionExpression=Key('pk').eq('CONNECTION') & Key('lsi').eq(f'SQUAD#{player.squad}')
+            KeyConditionExpression=Key('pk').eq('CONNECTION') & Key('lsi').eq(f'SQUAD#{player.squad.name}')
         )['Items']
 
         connection_ids = []
@@ -148,7 +192,7 @@ class ConnectionManager:
 
         return connection_ids
 
-    def get_game_master(self, player):
+    def get_game_master_from_player(self, player):
         """
         Given a player, gets the connection_id of the GameMaster of their lobby if they are connected
         :param player: Player to get GameMaster connection_id of
@@ -165,6 +209,44 @@ class ConnectionManager:
             return gm['lsi-2']
         else:
             return None
+
+    def get_player(self, connection_id):
+        """
+        Get a player from the Lobby session from their connection_id
+        :param connection_id: connection id of player websocket connection
+        :return:
+        """
+        response = self.table.query(
+            IndexName='lsi-2',
+            Select='ALL_ATTRIBUTES',
+            KeyConditionExpression=Key('pk').eq('CONNECTION') & Key('lsi-2').eq(connection_id)
+        )['Items']
+
+        if not response:
+            raise PlayerNotInLobbyException("No player with this connection_id is connected")
+
+        return player_model.Player(response[0]['sk'].split('#')[3])
+
+    def get_game_master(self, connection_id):
+        """
+        Get a GameMaster from the Lobby session from their connection_id
+        :return: connection_id of GameMaster if they are connected, otherwise None
+        """
+        """
+        Get a player from the Lobby session from their connection_id
+        :param connection_id: connection id of player websocket connection
+        :return:
+        """
+        response = self.table.query(
+            IndexName='lsi-2',
+            Select='ALL_ATTRIBUTES',
+            KeyConditionExpression=Key('pk').eq('CONNECTION') & Key('lsi-2').eq(connection_id)
+        )['Items']
+
+        if not response:
+            raise PlayerNotInLobbyException("No GameMaster with this connection_id is connected")
+
+        return game_master_model.GameMaster(response[0]['sk'].split('#')[1])
 
     def get_players_in_lobby(self, lobby):
         """
@@ -190,7 +272,7 @@ class ConnectionManager:
         """
         payload = dict(name=player.username, state=PlayerState.DEAD.value)
 
-        gm = self.get_game_master(player)
+        gm = self.get_game_master_from_player(player)
         squad_members = self.get_connected_squad_members(player)
 
         if gm:

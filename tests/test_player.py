@@ -2,8 +2,8 @@ import json
 import botocore
 
 from unittest import mock
-from exceptions import UserAlreadyExistsException, SquadAlreadyExistsException, UserOwnsSquadException, \
-    UserDoesNotOwnSquadException, UserAlreadyMemberException, LobbyNotStartedException
+from exceptions import UserAlreadyExistsException, SquadAlreadyExistsException, PlayerOwnsSquadException, \
+    PlayerDoesNotOwnSquadException, UserAlreadyMemberException, LobbyNotStartedException
 from handlers import authorization_handlers
 from handlers.player_handlers import get_owned_squads_handler, set_dead_handler, set_alive_handler, \
     get_current_lobby_handler
@@ -105,7 +105,7 @@ class TestPlayer(TestWithMockAWSServices):
 
         # create a squad
         squad_1 = self.player_1.create_squad(squad_name_1)
-        self.assertRaises(UserDoesNotOwnSquadException, self.player_2.delete_squad, squad_1)
+        self.assertRaises(PlayerDoesNotOwnSquadException, self.player_2.delete_squad, squad_1)
 
     def test_create_duplicate_squad(self):
         squad_name = 'test-squad-1'
@@ -165,7 +165,7 @@ class TestPlayer(TestWithMockAWSServices):
         self.player_1.add_member_to_squad(squad_1, self.player_2)
 
         # try to remove owner from squad
-        self.assertRaises(UserOwnsSquadException, self.player_1.remove_member_from_squad, squad_1, self.player_1)
+        self.assertRaises(PlayerOwnsSquadException, self.player_1.remove_member_from_squad, squad_1, self.player_1)
 
     def test_remove_members_from_squad_not_owner(self):
         # create squad, add one members
@@ -174,7 +174,7 @@ class TestPlayer(TestWithMockAWSServices):
         self.player_1.add_member_to_squad(squad_1, self.player_2)
 
         # try to remove players as Player who is not owner
-        self.assertRaises(UserDoesNotOwnSquadException, self.player_2.remove_member_from_squad, squad_1, self.player_1)
+        self.assertRaises(PlayerDoesNotOwnSquadException, self.player_2.remove_member_from_squad, squad_1, self.player_1)
 
     def test_remove_members_from_squad(self):
         # create squad, add two members, assert that squad now has 2 members in it
@@ -207,7 +207,7 @@ class TestPlayer(TestWithMockAWSServices):
         self.assertIn(self.player_3, fresh_squad.members)
 
         # player_1 cannot leave squad as they own it
-        self.assertRaises(UserOwnsSquadException, self.player_1.leave_squad, fresh_squad)
+        self.assertRaises(PlayerOwnsSquadException, self.player_1.leave_squad, fresh_squad)
 
         # player 3 leaves squad
         self.player_3.leave_squad(fresh_squad)

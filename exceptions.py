@@ -61,22 +61,22 @@ class PlayerException(ApiException):
     error_code = 500
 
 
-class UserCannotBeDeletedException(PlayerException):
+class PlayerCannotBeDeletedException(PlayerException):
     tag = __qualname__
     error_code = 400
 
 
-class UserDoesNotOwnSquadException(PlayerException):
+class PlayerDoesNotOwnSquadException(PlayerException):
     tag = __qualname__
     error_code = 400
 
 
-class UserOwnsSquadException(PlayerException):
+class PlayerOwnsSquadException(PlayerException):
     tag = __qualname__
     error_code = 400
 
 
-class UserNotInLobbyException(PlayerException):
+class PlayerNotInLobbyException(PlayerException):
     tag = __qualname__
     error_code = 400
 
@@ -106,6 +106,16 @@ class UserAlreadyMemberException(SquadException):
 class GameMasterException(ApiException):
     tag = "GameMasterException"
     error_code = 500
+
+
+class GameMasterAlreadyInLobbyException(GameMasterException):
+    tag = __qualname__
+    error_code = 400
+
+
+class GameMasterNotInLobbyException(GameMasterException):
+    tag = __qualname__
+    error_code = 400
 
 
 # exceptions for Lobbys

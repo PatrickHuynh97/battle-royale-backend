@@ -17,6 +17,36 @@ custom:
       - name: "Game Master Endpoints"
         description: "Endpoints where the calling user is modelled as a GameMaster"
     models: ${file(serverless_config/function_documentation/function_documentation.yml)} # todo break this up into smaller files
+  commonModelSchemaFragments:
+    # common fragments
+    AuthorizationException:
+      statusCode: '400'
+      contentType: 'application/json'
+      responseBody:
+        description: "Lobby Error containing the type of error and a message"
+      responseModels:
+        "application/json": AuthorizationException
+    GameMasterException:
+      statusCode: '400'
+      contentType: 'application/json'
+      responseBody:
+        description: "Game Master Error containing the type of error and a message"
+      responseModels:
+        "application/json": GameMasterException
+    PlayerException:
+      statusCode: '400'
+      contentType: 'application/json'
+      responseBody:
+        description: "Player Error containing the type of error and a message"
+      responseModels:
+        "application/json": PlayerException
+    LobbyException:
+      statusCode: '400'
+      contentType: 'application/json'
+      responseBody:
+        description: "Lobby Error containing the type of error and a message"
+      responseModels:
+        "application/json": LobbyException
 
 service:
   name: api-service
@@ -27,6 +57,7 @@ provider:
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'eu-central-1'}
   profile: ${opt:profile, 'personal'}
+  websocketApiRouteSelectionExpression: $request.body.action
   deploymentBucket:
     name: ${self:custom.project.name}-dev
   versionFunctions: false
@@ -45,6 +76,7 @@ functions:
   - ${file(serverless_config/functions/user-functions.yml)}
   - ${file(serverless_config/functions/player-functions.yml)}
   - ${file(serverless_config/functions/game-master-functions.yml)}
+  - ${file(serverless_config/functions/websocket-functions.yml)}
 
 package:
   include:

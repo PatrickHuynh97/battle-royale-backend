@@ -24,6 +24,7 @@ createSquad:
             - statusCode: "200"
               responseBody:
                 description: "None"
+            - ${self:custom.commonModelSchemaFragments.PlayerException}
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient
@@ -58,6 +59,7 @@ deleteSquad:
             - statusCode: "200"
               responseBody:
                 description: "None"
+            - ${self:custom.commonModelSchemaFragments.PlayerException}
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient
@@ -93,6 +95,7 @@ addUserToSquad:
             - statusCode: "200"
               responseBody:
                 description: "None"
+            - ${self:custom.commonModelSchemaFragments.PlayerException}
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient
@@ -128,6 +131,7 @@ removeMemberFromSquad:
             - statusCode: "200"
               responseBody:
                 description: "None"
+            - ${self:custom.commonModelSchemaFragments.PlayerException}
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient
@@ -160,6 +164,7 @@ getOwnedSquads:
                 description: "List of Squads owned by calling user"
               responseModels:
                 "application/json": GetSquadsResponse
+            - ${self:custom.commonModelSchemaFragments.PlayerException}
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient
@@ -192,6 +197,7 @@ getNotOwnedSquads:
                 description: "List of Squads calling user is in but does not own"
               responseModels:
                 "application/json": GetSquadsResponse
+            - ${self:custom.commonModelSchemaFragments.PlayerException}
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient
@@ -224,6 +230,7 @@ getCurrentLobby:
                 description: "Lobby that calling user is currently in"
               responseModels:
                 "application/json": GetLobbyResponse
+            - ${self:custom.commonModelSchemaFragments.PlayerException}
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient
@@ -254,6 +261,7 @@ setDead:
             - statusCode: "200"
               responseBody:
                 description: "None"
+            - ${self:custom.commonModelSchemaFragments.PlayerException}
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient
@@ -284,6 +292,7 @@ setAlive:
             - statusCode: "200"
               responseBody:
                 description: "None"
+            - ${self:custom.commonModelSchemaFragments.PlayerException}
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient
@@ -315,6 +324,7 @@ pullSquadFromLobby:
             - statusCode: "200"
               responseBody:
                 description: "None"
+            - ${self:custom.commonModelSchemaFragments.PlayerException}
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient

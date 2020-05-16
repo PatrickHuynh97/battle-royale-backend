@@ -18,6 +18,7 @@ deleteUser:
             - statusCode: "200"
               responseBody:
                 description: "None"
+            - ${self:custom.commonModelSchemaFragments.AuthorizationException}
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient

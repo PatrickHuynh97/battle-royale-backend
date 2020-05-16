@@ -1,6 +1,6 @@
 from db.dynamodb_connector import DynamoDbConnector
 from exceptions import UserDoesNotExistException, LobbyDoesNotExistException, LobbyAlreadyStartedException, \
-    UserNotInLobbyException
+    PlayerNotInLobbyException, GameMasterAlreadyInLobbyException, GameMasterNotInLobbyException
 from enums import LobbyState
 from models import lobby as lobby_model
 from models import user
@@ -25,7 +25,7 @@ class GameMaster(user.User):
 
     def get(self):
         """
-        Gets a player from the database
+        Gets a GameMaster from the database
         :return: Information about the player
         """
         response = self.table.get_item(
@@ -39,7 +39,7 @@ class GameMaster(user.User):
         if not gm:
             raise UserDoesNotExistException("Game Master with username {} does not exist".format(self.username))
 
-        self.lobby = lobby_model.Lobby(gm.get('lobby-name'), gm.get('lobby-owner'))
+        self.lobby = lobby_model.Lobby(gm.get('lobby-name'), self) if gm.get('lobby-name') else None
 
     def exists(self):
         """
@@ -90,6 +90,8 @@ class GameMaster(user.User):
         :param squad_size: Maximum size of squad allowed in the lobby. Default squad size is 4
         :return: Game lobby object
         """
+        if self.lobby:
+            raise GameMasterAlreadyInLobbyException("GameMaster already has an open lobby")
         lobby = lobby_model.Lobby(lobby_name, owner=self)
         lobby.put(size=size, squad_size=squad_size)
         self.set_in_lobby(lobby)
@@ -123,10 +125,10 @@ class GameMaster(user.User):
         :return: Game lobby object
         """
         self.get()
-        if self.lobby.name and self.lobby.owner == self.username:
+        if self.lobby.name and self.lobby.owner == self:
             return lobby_model.Lobby(self.lobby.name, self)
         else:
-            raise UserNotInLobbyException("Game Master is not currently in a Lobby")
+            raise GameMasterNotInLobbyException("Game Master is not currently in a Lobby")
 
     def update_lobby(self, lobby_name, size=None, squad_size=None, game_zone_coordinates=None):
         """
@@ -230,4 +232,5 @@ class GameMaster(user.User):
         :return: List of players in the lobby and their state
         """
         lobby = lobby_model.Lobby(lobby_name, self)
+        lobby.get()
         return lobby.get_players_and_states()

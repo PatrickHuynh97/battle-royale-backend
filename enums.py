@@ -21,6 +21,7 @@ class PlayerState(Enum):
 class WebSocketEventType(Enum):
     CONNECT = 'connect'
     DISCONNECT = 'disconnect'
+    AUTHORIZE = 'authorize'
 
 
 class GameMasterMessageType(Enum):

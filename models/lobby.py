@@ -2,7 +2,7 @@ from boto3.dynamodb.conditions import Key
 from db.dynamodb_connector import DynamoDbConnector
 from exceptions import LobbyDoesNotExistException, SquadInLobbyException, SquadNotInLobbyException, \
     SquadTooBigException, LobbyFullException, LobbyAlreadyStartedException, NotEnoughSquadsException, \
-    PlayerAlreadyInLobbyException, LobbyNotStartedException, UserNotInLobbyException
+    PlayerAlreadyInLobbyException, LobbyNotStartedException, PlayerNotInLobbyException
 from models import game_master
 from enums import LobbyState, PlayerState
 from models import squad as squad_model
@@ -189,7 +189,7 @@ class Lobby:
             self.get()
 
         if self.state == LobbyState.FINISHED:
-            raise LobbyAlreadyStartedException("Game has already finished")
+            raise LobbyNotStartedException("Game has not been started")
 
         self.table.update_item(
             Key={
@@ -323,7 +323,7 @@ class Lobby:
             if _player['name'] == player.username:
                 return _player
 
-        raise UserNotInLobbyException(f"User {player.username} could not be found in the lobby")
+        raise PlayerNotInLobbyException(f"User {player.username} could not be found in the lobby")
 
     def set_player_dead(self, player):
         """

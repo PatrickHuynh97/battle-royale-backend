@@ -223,3 +223,55 @@
         type: array
         items:
           $ref: "{{model: UsernameSchema}}"
+
+# EXCEPTIONS
+-
+  name: AuthorizationException
+  contentType: "application/json"
+  schema:
+    type: object
+    properties:
+      type:
+        type: "string"
+      message:
+        type: "string"
+-
+  name: PlayerException
+  contentType: "application/json"
+  schema:
+    type: object
+    properties:
+      type:
+        type: "string"
+      message:
+        type: "string"
+-
+  name: SquadException
+  contentType: "application/json"
+  schema:
+    type: object
+    properties:
+      type:
+        type: "string"
+      message:
+        type: "string"
+-
+  name: GameMasterException
+  contentType: "application/json"
+  schema:
+    type: object
+    properties:
+      type:
+        type: "string"
+      message:
+        type: "string"
+-
+  name: LobbyException
+  contentType: "application/json"
+  schema:
+    type: object
+    properties:
+      type:
+        type: "string"
+      message:
+        type: "string"

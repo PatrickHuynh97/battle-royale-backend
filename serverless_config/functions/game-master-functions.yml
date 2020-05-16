@@ -24,6 +24,7 @@ createLobby:
             - statusCode: "200"
               responseBody:
                 description: "None"
+            - ${self:custom.commonModelSchemaFragments.GameMasterException}
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient
@@ -60,6 +61,7 @@ getLobby:
                 description: "JSON containing information about the requested lobby"
               responseModels:
                 "application/json": GetLobbyResponse
+            - ${self:custom.commonModelSchemaFragments.GameMasterException}
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient
@@ -94,7 +96,7 @@ deleteLobby:
             - statusCode: "200"
               responseBody:
                 description: "None"
-
+            - ${self:custom.commonModelSchemaFragments.GameMasterException}
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient
@@ -130,6 +132,7 @@ addSquadToLobby:
             - statusCode: "200"
               responseBody:
                 description: "None"
+            - ${self:custom.commonModelSchemaFragments.GameMasterException}
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient
@@ -165,6 +168,7 @@ removeSquadFromLobby:
             - statusCode: "200"
               responseBody:
                 description: "None"
+            - ${self:custom.commonModelSchemaFragments.GameMasterException}
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient
@@ -200,6 +204,7 @@ getPlayersInLobby:
                 description: "List of Players in the lobby and their information"
               responseModels:
                 "application/json": GetPlayersInLobbyResponse
+            - ${self:custom.commonModelSchemaFragments.GameMasterException}
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient
@@ -237,6 +242,7 @@ updateLobby:
                 description: "List of Players in the lobby and their information"
               responseModels:
                 "application/json": GetPlayersInLobbyResponse
+            - ${self:custom.commonModelSchemaFragments.GameMasterException}
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient
@@ -268,6 +274,7 @@ startLobby:
             - statusCode: "200"
               responseBody:
                 description: "None"
+            - ${self:custom.commonModelSchemaFragments.GameMasterException}
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient
@@ -299,6 +306,7 @@ endLobby:
             - statusCode: "200"
               responseBody:
                 description: "None"
+            - ${self:custom.commonModelSchemaFragments.GameMasterException}
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient

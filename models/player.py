@@ -1,8 +1,8 @@
 from boto3.dynamodb.conditions import Key
 
 from db.dynamodb_connector import DynamoDbConnector
-from exceptions import UserDoesNotExistException, UserDoesNotOwnSquadException, SquadAlreadyExistsException, \
-    UserOwnsSquadException, UserNotInLobbyException, SquadInLobbyException
+from exceptions import UserDoesNotExistException, PlayerDoesNotOwnSquadException, SquadAlreadyExistsException, \
+    PlayerOwnsSquadException, PlayerNotInLobbyException, SquadInLobbyException
 from models import squad as squad_model
 from models import user
 from models import lobby as lobby_model
@@ -125,7 +125,7 @@ class Player(user.User):
 
         # cannot delete a squad that Player does not own
         if squad.owner.username != self.username:
-            raise UserDoesNotOwnSquadException("User does not own squad with name {}".format(squad.name))
+            raise PlayerDoesNotOwnSquadException("User does not own squad with name {}".format(squad.name))
 
         squad.delete()
 
@@ -141,7 +141,7 @@ class Player(user.User):
 
         # cannot invite users to squads Player does not own
         if squad.owner.username != self.username:
-            raise UserDoesNotOwnSquadException("User does not own squad with name {}".format(squad.name))
+            raise PlayerDoesNotOwnSquadException("User does not own squad with name {}".format(squad.name))
 
         # make sure user exists before adding to squad
         if not new_member.exists():
@@ -161,10 +161,10 @@ class Player(user.User):
 
         # cannot remove members from squads Player does not own
         if squad.owner.username != self.username:
-            raise UserDoesNotOwnSquadException("User does not own squad with name {}".format(squad.name))
+            raise PlayerDoesNotOwnSquadException("User does not own squad with name {}".format(squad.name))
 
         if member_to_remove == squad.owner:
-            raise UserOwnsSquadException("Owner cannot be removed from the squad")
+            raise PlayerOwnsSquadException("Owner cannot be removed from the squad")
 
         squad.remove_member(member_to_remove)
 
@@ -177,7 +177,7 @@ class Player(user.User):
         squad.get()
         squad.get_members()
         if squad.owner == self:
-            raise UserOwnsSquadException("User cannot leave a squad they own")
+            raise PlayerOwnsSquadException("User cannot leave a squad they own")
 
         squad.remove_member(self)
 
@@ -230,7 +230,7 @@ class Player(user.User):
         """
         squad.get()
         if squad.owner != self:
-            raise UserDoesNotOwnSquadException(f"User {self.username} is not the owner of squad {squad.name}")
+            raise PlayerDoesNotOwnSquadException(f"User {self.username} is not the owner of squad {squad.name}")
 
         squad.leave_lobby()
 
@@ -276,7 +276,7 @@ class Player(user.User):
         if self.lobby.name and self.lobby.owner:
             return lobby_model.Lobby(self.lobby.name, game_master_model.GameMaster(self.lobby.owner.username))
         else:
-            raise UserNotInLobbyException("Player is not currently in a Lobby")
+            raise PlayerNotInLobbyException("Player is not currently in a Lobby")
 
     def get_current_state(self):
         """

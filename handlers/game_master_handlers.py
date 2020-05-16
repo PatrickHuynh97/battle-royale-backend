@@ -14,8 +14,9 @@ def create_lobby(event, context):
     lobby_name = body['name']
     lobby_size = body.get('lobby_size')
     squad_size = body.get('squad_size')
-
-    GameMaster(username).create_lobby(lobby_name=lobby_name, size=lobby_size, squad_size=squad_size)
+    game_master = GameMaster(username)
+    game_master.get()
+    game_master.create_lobby(lobby_name=lobby_name, size=lobby_size, squad_size=squad_size)
 
 
 @endpoint(response_schema=LobbySchema)
