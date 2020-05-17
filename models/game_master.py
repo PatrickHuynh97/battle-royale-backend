@@ -1,6 +1,6 @@
 from db.dynamodb_connector import DynamoDbConnector
 from exceptions import UserDoesNotExistException, LobbyDoesNotExistException, LobbyAlreadyStartedException, \
-    PlayerNotInLobbyException, GameMasterAlreadyInLobbyException, GameMasterNotInLobbyException
+    GameMasterAlreadyInLobbyException, GameMasterNotInLobbyException
 from enums import LobbyState
 from models import lobby as lobby_model
 from models import user
@@ -130,18 +130,19 @@ class GameMaster(user.User):
         else:
             raise GameMasterNotInLobbyException("Game Master is not currently in a Lobby")
 
-    def update_lobby(self, lobby_name, size=None, squad_size=None, game_zone_coordinates=None):
+    def update_lobby(self, lobby_name, size=None, squad_size=None, game_zone_coordinates=None, final_circle=None):
         """
         Update a lobby owned by Game Master
         :param lobby_name: name of lobby to update
         :param size: size of lobby
         :param squad_size: size of squads allowed in lobby
         :param game_zone_coordinates: four coordinates making up the game zone
+        :param final_circle: coordinates of centre and radius of final circle
         """
         lobby = lobby_model.Lobby(lobby_name, owner=self)
         if not lobby.exists():
             raise LobbyDoesNotExistException
-        lobby.update(size, squad_size, game_zone_coordinates)
+        lobby.update(size, squad_size, game_zone_coordinates, final_circle=final_circle)
         return lobby
 
     def set_in_lobby(self, lobby):

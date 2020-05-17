@@ -229,7 +229,7 @@ getCurrentLobby:
               responseBody:
                 description: "Lobby that calling user is currently in"
               responseModels:
-                "application/json": GetLobbyResponse
+                "application/json": GetLobbyAsPlayerResponse
             - ${self:custom.commonModelSchemaFragments.PlayerException}
   environment:
     USER_POOL_CLIENT_ID:

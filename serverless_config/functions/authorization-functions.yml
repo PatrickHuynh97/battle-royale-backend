@@ -99,6 +99,8 @@ refreshTokens:
             - statusCode: "200"
               responseBody:
                 description: "None"
+              responseModels:
+                "application/json": AuthorizationResponse
             - ${self:custom.commonModelSchemaFragments.AuthorizationException}
   environment:
     USER_POOL_CLIENT_ID:

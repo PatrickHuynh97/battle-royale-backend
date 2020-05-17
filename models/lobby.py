@@ -6,6 +6,7 @@ from exceptions import LobbyDoesNotExistException, SquadInLobbyException, SquadN
 from models import game_master
 from enums import LobbyState, PlayerState
 from models import squad as squad_model
+from models.map import Circle, GameZone
 from websockets import connection_manager
 
 
@@ -21,9 +22,10 @@ class Lobby:
         self.size = None
         self.squad_size = None
         self.state = None
-        self.game_zone_coordinates = None
+        self.game_zone = None
         self.current_circle = None
         self.next_circle = None
+        self.final_circle = None
         self.squads = []
         self.table = DynamoDbConnector.get_table()
 
@@ -91,7 +93,13 @@ class Lobby:
         self.size = lobby.get('size')
         self.squad_size = lobby.get('squad-size')
         self.state = LobbyState(lobby.get('state'))
-        self.game_zone_coordinates = lobby.get('game-zone-coordinates')
+        self.current_circle = Circle(lobby.get('current-circle')) if lobby.get('current-circle') else None
+        self.next_circle = Circle(lobby.get('next-circle')) if lobby.get('next-circle') else None
+        self.final_circle = Circle(lobby.get('final-circle')) if lobby.get('final-circle') else None
+        self.game_zone = GameZone(lobby.get('game-zone-coordinates'),
+                                  current_circle=self.current_circle,
+                                  next_circle=self.next_circle,
+                                  final_circle=self.final_circle)
 
     def exists(self):
         """
@@ -123,14 +131,22 @@ class Lobby:
             }
         )
 
-    def update(self, size: int = None,
+    def update(self,
+               size: int = None,
                squad_size: int = None,
-               game_zone_coordinates: dict = None):
+               game_zone_coordinates: dict = None,
+               current_circle: dict = None,
+               next_circle: dict = None,
+               final_circle: dict = None):
         """
         Update lobby information
         :param size: New size of lobby
         :param squad_size: New squad size allowed in lobby
         :param game_zone_coordinates: dict containing c1, c2, c3 and c4, coordinates which make up the entire game zone
+        :param current_circle: dict containing coordinates and radius of the current circle
+        :param next_circle: dict containing coordinates and radius of the next circle
+        :param final_circle: position of the final circle. If defined before game starts, each circle will be
+        generated to converge towards this final position. Otherwise, circles will be completely random.
         """
 
         attributes_to_update = dict()
@@ -140,9 +156,21 @@ class Lobby:
         if squad_size:
             attributes_to_update['squad-size'] = dict(Value=squad_size)
             self.squad_size = squad_size
+        if current_circle:
+            attributes_to_update['current-circle'] = dict(Value=Circle(current_circle).circle_to_string())
+            self.current_circle = Circle(current_circle)
+        if next_circle:
+            attributes_to_update['next_circle'] = dict(Value=Circle(next_circle).circle_to_string())
+            self.next_circle = Circle(next_circle)
+        if final_circle:
+            attributes_to_update['final-circle'] = dict(Value=Circle(final_circle).circle_to_string())
+            self.final_circle = Circle(final_circle)
         if game_zone_coordinates:
-            attributes_to_update['game-zone-coordinates'] = dict(Value=game_zone_coordinates)
-            self.game_zone_coordinates = game_zone_coordinates
+            attributes_to_update['game-zone-coordinates'] = dict(Value=GameZone(game_zone_coordinates).dump_game_zone_coordinates())
+            self.game_zone = GameZone(game_zone_coordinates,
+                                      current_circle=self.current_circle,
+                                      next_circle=self.next_circle,
+                                      final_circle=self.final_circle)
         if attributes_to_update:
             self.table.update_item(
                 Key={
@@ -368,27 +396,9 @@ class Lobby:
             },
             AttributeUpdates={f'PLAYER#{player.username}': dict(Value=PlayerState.ALIVE.value)})
 
-    def set_current_circle(self, circle_centre=None, circle_radius=None):
-        """
-        Sets the current circle position. If centre and radius are not given, they will be randomly generated
-        :param circle_centre: dict containing x,y coordinates of centre of circle
-        :param circle_radius: radius of the circle
-        :return: None
-        """
-        # todo
-
-    def set_next_circle(self, circle_centre=None, circle_radius=None):
-        """
-        Sets the next circle position. If centre and radius are not given, they will be randomly generated
-        :param circle_centre: dict containing x,y coordinates of centre of the next circle
-        :param circle_radius: radius of the next circle
-        :return: None
-        """
-        # todo
-
     def close_current_circle(self):
         """
-        Begins the closing of the current circle, to become the next circle
+        Begins the closing of the current circle
         :return: None
         """
-        # todo
+        self.game_zone.close_current_circle()

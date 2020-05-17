@@ -4,3 +4,4 @@ botocore
 python-jose[cryptography]
 docker
 marshmallow
+geopy

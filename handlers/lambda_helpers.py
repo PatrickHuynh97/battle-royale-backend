@@ -18,10 +18,7 @@ def endpoint(response_schema=None, request_schema=None):
 
             set_calling_user(event)
 
-            if request_schema:
-                request_schema().loads(event['body'])
-            else:
-                preload_body(event)
+            preload_body(event, request_schema)
 
             try:
                 result = func(event, context)
@@ -47,12 +44,16 @@ def set_calling_user(event):
         event['calling_user'] = authorizer['claims']['cognito:username']
 
 
-def preload_body(event):
-    # try to pre-load body into JSON. If it fails, do nothing.
-    try:
-        event['body'] = json.loads(event['body'])
-    except JSONDecodeError:
-        pass
+def preload_body(event, schema):
+    # if a schema is given, try to load the request with that
+    if schema:
+        event['body'] = schema().loads(event['body'])
+    # otherwise try to load body into JSON. If it fails, do nothing.
+    else:
+        try:
+            event['body'] = json.loads(event['body'])
+        except JSONDecodeError:
+            pass
 
 
 def handle_api_exception(exception):

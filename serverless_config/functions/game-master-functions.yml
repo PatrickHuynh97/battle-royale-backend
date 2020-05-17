@@ -60,7 +60,7 @@ getLobby:
               responseBody:
                 description: "JSON containing information about the requested lobby"
               responseModels:
-                "application/json": GetLobbyResponse
+                "application/json": GetLobbyAsGameMasterResponse
             - ${self:custom.commonModelSchemaFragments.GameMasterException}
   environment:
     USER_POOL_CLIENT_ID:
@@ -233,15 +233,13 @@ updateLobby:
           tags:
             - "Game Master Endpoints"
           requestBody:
-            description: "JSON containing fields to update"
+            description: "JSON containing fields update"
           requestModels:
             "application/json": LobbySettingsRequest
           methodResponses:
             - statusCode: "200"
               responseBody:
-                description: "List of Players in the lobby and their information"
-              responseModels:
-                "application/json": GetPlayersInLobbyResponse
+                description: "None"
             - ${self:custom.commonModelSchemaFragments.GameMasterException}
   environment:
     USER_POOL_CLIENT_ID:

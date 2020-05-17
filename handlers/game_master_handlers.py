@@ -1,5 +1,5 @@
 from handlers.lambda_helpers import endpoint
-from handlers.schemas import LobbySchema, LobbyPlayerListSchema
+from handlers.schemas import LobbySchema, LobbyPlayerListSchema, UpdateLobbySchema
 from models.game_master import GameMaster
 from models.squad import Squad
 
@@ -37,7 +37,10 @@ def get_lobby_handler(event, context):
             'state': lobby.state.value,
             'size': lobby.size,
             'squad_size': lobby.squad_size,
-            'game_zone_coordinates': lobby.game_zone_coordinates,
+            'game_zone_coordinates': lobby.game_zone.coordinates,
+            'current_circle': lobby.current_circle,
+            'next_circle': lobby.next_circle,
+            'final_circle': lobby.final_circle,
             'squads': [dict(name=squad.name,
                             owner=squad.owner.username,
                             members=[dict(username=member.username)
@@ -95,7 +98,7 @@ def get_players_in_lobby_handler(event, context):
     return dict(players=players)
 
 
-@endpoint()
+@endpoint(request_schema=UpdateLobbySchema)
 def update_lobby_handler(event, context):
     """
     Handler for updating lobby settings, such as lobby size, squad size, game zone coordinates
@@ -108,7 +111,8 @@ def update_lobby_handler(event, context):
     GameMaster(username).update_lobby(lobby_name,
                                       size=body.get('size'),
                                       squad_size=body.get('squad_size'),
-                                      game_zone_coordinates=body.get('game_zone_coordinates'))
+                                      game_zone_coordinates=body.get('game_zone_coordinates'),
+                                      final_circle=body.get('final_circle'))
 
 
 @endpoint()

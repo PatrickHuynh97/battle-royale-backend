@@ -91,7 +91,7 @@ def get_not_owned_squads_handler(event, context):
 @endpoint(response_schema=LobbySchema)
 def get_current_lobby_handler(event, context):
     """
-    Handler for getting the lobby the player is currently in
+    Handler for getting the lobby the player is currently in. Omits information such as final circle location.
     """
     username = event['calling_user']
 
@@ -105,7 +105,9 @@ def get_current_lobby_handler(event, context):
             'state': lobby.state.value,
             'size': lobby.size,
             'squad_size': lobby.squad_size,
-            'game_zone_coordinates': lobby.game_zone_coordinates,
+            'game_zone_coordinates': lobby.game_zone,
+            'current_circle': lobby.current_circle,
+            'next_circle': lobby.next_circle,
             'squads': [dict(name=squad.name,
                             owner=squad.owner.username,
                             members=[dict(username=member.username)

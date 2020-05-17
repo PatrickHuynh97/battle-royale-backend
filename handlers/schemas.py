@@ -16,8 +16,13 @@ class SquadListSchema(Schema):
 
 
 class CoordinateSchema(Schema):
-    x = fields.Float()
-    y = fields.Float()
+    longitude = fields.Float()
+    latitude = fields.Float()
+
+
+class CircleSchema(Schema):
+    centre = fields.Nested(CoordinateSchema)
+    radius = fields.Float()
 
 
 class GameZoneCoordinatesSchema(Schema):
@@ -33,8 +38,18 @@ class LobbySchema(Schema):
     state = fields.String(required=True)
     size = fields.Integer(required=True)
     squad_size = fields.Integer(required=True)
+    current_circle = fields.Nested(CircleSchema, allow_none=True, required=False)
+    next_circle = fields.Nested(CircleSchema, allow_none=True, required=False)
+    final_circle = fields.Nested(CircleSchema, allow_none=True, required=False)
     game_zone_coordinates = fields.Nested(GameZoneCoordinatesSchema, allow_none=True)
     squads = fields.Nested(SquadSchema, many=True)
+
+
+class UpdateLobbySchema(Schema):
+    size = fields.Integer(required=True)
+    squad_size = fields.Integer(required=True)
+    final_circle = fields.Nested(CircleSchema, allow_none=True, required=False)
+    game_zone_coordinates = fields.Nested(GameZoneCoordinatesSchema, allow_none=True)
 
 
 class LobbyPlayerState(Schema):

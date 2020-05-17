@@ -3,7 +3,7 @@ import json
 from exceptions import SquadInLobbyException, SquadTooBigException, LobbyFullException, \
     LobbyAlreadyStartedException, PlayerAlreadyInLobbyException
 from handlers import game_master_handlers
-from handlers.game_master_handlers import get_lobby_handler
+from handlers.game_master_handlers import get_lobby_handler, update_lobby_handler
 from handlers.schemas import LobbySchema, LobbyPlayerListSchema
 from enums import LobbyState
 from models.game_master import GameMaster
@@ -44,10 +44,14 @@ class TestGameMaster(TestWithMockAWSServices):
         squad_size = 3
         self.game_master_1.create_lobby(lobby_name, size=lobby_size, squad_size=squad_size)
 
-        game_zone_coordinates = dict(c1=dict(x='1.125', y='12.123'), c2=dict(x='4.123', y='12.123'),
-                                     c3=dict(x='4.123', y='12.123'), c4=dict(x='12.123', y='12.123'))
-        game_zone_coordinates_as_float = dict(c1=dict(x=1.125, y=12.123), c2=dict(x=4.123, y=12.123),
-                                              c3=dict(x=4.123, y=12.123), c4=dict(x=12.123, y=12.123))
+        game_zone_coordinates = dict(c1=dict(longitude='1.125', latitude='12.123'),
+                                     c2=dict(longitude='4.123', latitude='12.123'),
+                                     c3=dict(longitude='4.123', latitude='12.123'),
+                                     c4=dict(longitude='12.123', latitude='12.123'))
+        game_zone_coordinates_as_float = dict(c1=dict(longitude=1.125, latitude=12.123),
+                                              c2=dict(longitude=4.123, latitude=12.123),
+                                              c3=dict(longitude=4.123, latitude=12.123),
+                                              c4=dict(longitude=12.123, latitude=12.123))
         self.game_master_1.update_lobby(lobby_name,
                                         game_zone_coordinates=game_zone_coordinates)
 
@@ -221,8 +225,28 @@ class TestGameMaster(TestWithMockAWSServices):
         # update lobby settings
         new_lobby_size = 15
         new_squad_size = 4
-        game_zone_coordinates = dict(c1=dict(x='1', y='12'), c2=dict(x='4', y='12'),
-                                     c3=dict(x='4', y='12'), c4=dict(x='12', y='12'))
+        game_zone_coordinates = dict(c1=dict(longitude='1.12', latitude='12'),
+                                     c2=dict(longitude='4', latitude='12'),
+                                     c3=dict(longitude='4', latitude='12'),
+                                     c4=dict(longitude='12.51', latitude='12.12'))
+        game_zone_coordinates_as_float = dict(c1=dict(longitude=1.12, latitude=12),
+                                              c2=dict(longitude=4, latitude=12),
+                                              c3=dict(longitude=4, latitude=12),
+                                              c4=dict(longitude=12.51, latitude=12.12))
+        circle_centre = {'longitude': 1.123, 'latitude': 2.234}
+        circle_radius = 30
+        event, context = make_api_gateway_event(calling_user=self.game_master_1,
+                                                path_params={'lobby': lobby_name},
+                                                body={
+                                                    'size': new_lobby_size,
+                                                    'squad_size': new_squad_size,
+                                                    'game_zone_coordinates': game_zone_coordinates,
+                                                    'final_circle': {
+                                                        'centre': circle_centre,
+                                                        'radius': circle_radius
+                                                    }
+                                                })
+        update_lobby_handler(event, context)
         self.game_master_1.update_lobby(lobby_name,
                                         size=new_lobby_size,
                                         squad_size=new_squad_size,
@@ -231,7 +255,7 @@ class TestGameMaster(TestWithMockAWSServices):
         lobby = self.game_master_1.get_lobby(lobby_name)
         self.assertEqual(new_lobby_size, lobby.size)
         self.assertEqual(new_squad_size, lobby.squad_size)
-        self.assertEqual(game_zone_coordinates, lobby.game_zone_coordinates)
+        self.assertEqual(game_zone_coordinates_as_float, lobby.game_zone.coordinates)
 
     def test_full_game_flow(self):
         # create a lobby, add some squads

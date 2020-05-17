@@ -115,9 +115,20 @@
   schema:
     type: object
     properties:
-      x:
+      longitude:
         type: number
-      y:
+      latitude:
+        type: number
+
+-
+  name: CircleDataSchema
+  contentType: "application/json"
+  schema:
+    type: object
+    properties:
+      centre:
+        $ref: "{{model: CoordinatesSchema}}"
+      radius:
         type: number
 
 -
@@ -147,9 +158,11 @@
         type: integer
       game_zone_coordinates:
         $ref: "{{model: LobbyGameZoneCoordinatesSchema}}"
+      final_circle:
+        $ref: "{{model: CircleDataSchema}}"
 
 -
-  name: GetLobbyResponse
+  name: GetLobbyAsGameMasterResponse
   contentType: "application/json"
   schema:
     type: object
@@ -164,6 +177,37 @@
         type: integer
       owner:
         type: string
+      current_circle:
+        $ref: "{{model: CircleDataSchema}}"
+      next_circle:
+        $ref: "{{model: CircleDataSchema}}"
+      final_circle:
+        $ref: "{{model: CircleDataSchema}}"
+      game_zone_coordinates:
+        $ref: "{{model: LobbyGameZoneCoordinatesSchema}}"
+      squads:
+        type: array
+        items:
+          $ref: "{{model: SquadSchema}}"
+
+-
+  name: GetLobbyAsPlayerResponse
+  contentType: "application/json"
+  schema:
+    type: object
+    properties:
+      name:
+        type: string
+      state:
+        type: string
+      size:
+        type: integer
+      squad_size:
+        type: integer
+      owner:
+        type: string
+      current_circle:
+        $ref: "{{model: CircleDataSchema}}"
       game_zone_coordinates:
         $ref: "{{model: LobbyGameZoneCoordinatesSchema}}"
       squads:
