@@ -1,3 +1,4 @@
+from datetime import datetime
 from boto3.dynamodb.conditions import Key
 from db.dynamodb_connector import DynamoDbConnector
 from exceptions import LobbyDoesNotExistException, SquadInLobbyException, SquadNotInLobbyException, \
@@ -8,6 +9,7 @@ from enums import LobbyState, PlayerState
 from models import squad as squad_model
 from models.map import Circle, GameZone
 from websockets import connection_manager
+import pytz
 
 
 class Lobby:
@@ -26,6 +28,7 @@ class Lobby:
         self.current_circle = None
         self.next_circle = None
         self.final_circle = None
+        self.started_time = None
         self.squads = []
         self.table = DynamoDbConnector.get_table()
 
@@ -100,6 +103,8 @@ class Lobby:
                                   current_circle=self.current_circle,
                                   next_circle=self.next_circle,
                                   final_circle=self.final_circle)
+        self.started_time = datetime.strptime(lobby.get('started-time'), "%Y-%m-%dT%H:%M:%S.%f%z") \
+            if lobby.get('started-time') else None
 
     def exists(self):
         """
@@ -196,13 +201,15 @@ class Lobby:
         if len(self.squads) < 2:
             raise NotEnoughSquadsException("Lobby does not have enough squads to start")
 
+        self.started_time = datetime.now(tz=pytz.utc)
         # set game as started
         self.table.update_item(
             Key={
                 'pk': self.name,
                 'sk': f'OWNER#{self.owner.username}'
             },
-            AttributeUpdates={'state': dict(Value=LobbyState.STARTED.value)}
+            AttributeUpdates={'state': dict(Value=LobbyState.STARTED.value),
+                              'started-time': dict(Value=self.started_time.isoformat())}
         )
 
         self.state = LobbyState.STARTED

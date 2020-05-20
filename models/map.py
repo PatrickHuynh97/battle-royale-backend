@@ -1,6 +1,6 @@
 from math import cos, pi
-from random import random
 from geopy import distance
+import random
 
 
 class MapObject:
@@ -30,11 +30,17 @@ class Circle(MapObject):
     # class representing a circle of playable area
     def __init__(self, circle):
         self.centre = circle.get('centre') if circle else None
-        self.radius = float(circle.get('radius')) if circle else None
+        self.radius = float(circle.get('radius')) if circle.get('radius') else None
 
         # if we have circle data, and coordinates are strings, convert them to floats
         if self.centre:
             self.centre = self.coordinate_to_float(self.centre)
+
+    def __eq__(self, other):
+        """If a Circle object has the same centre and radius as another Circle, they are the same Circle"""
+        if isinstance(other, Circle):
+            return self.centre == other.centre and self.radius == other.radius
+        return False
 
     def circle_to_string(self):
         return dict(
@@ -42,17 +48,16 @@ class Circle(MapObject):
             radius=str(self.radius)
         )
 
-    def generate_centre_within_distance(self, distance_from_centre):
+    def generate_centre_within_distance(self, max_allowed_distance):
         """
         Generates another circle's centre that is within distance_from_centre kilometers of self.centre. Math from:
         https://stackoverflow.com/questions/7477003/calculating-new-longitude-latitude-from-old-n-meters
-        :param distance_from_centre: allowed distance of new circle centre from self.centre
+        :param max_allowed_distance: maximum allowed distance of new circle centre from self.centre in kilometers
         :return: a valid next circle centre given allowed distance from current circle
         """
         # change in latitude and longitude if self.centre is moved distance_from_centre kilometers
-        latitude_adjustment = (distance_from_centre / distance.EARTH_RADIUS) * (180 / pi)
-        longitude_adjustment = ((distance_from_centre / distance.EARTH_RADIUS) *
-                                (180 / pi) / cos(self.centre['latitude'] * pi / 180))
+        latitude_adjustment = (max_allowed_distance / distance.EARTH_RADIUS) * (180 / pi)
+        longitude_adjustment = (max_allowed_distance / distance.EARTH_RADIUS) * (180 / pi) / cos(self.centre['latitude'] * pi / 180)
 
         while True:
             # generate random coordinate within distance_from_centre metres from current self.centre
@@ -62,8 +67,8 @@ class Circle(MapObject):
                                                   self.centre['longitude'] + longitude_adjustment)
             coordinates = dict(latitude=new_centre_latitude, longitude=new_centre_longitude)
 
-            # check if generated distance is acceptable. If it's not, repeat random coordinate generation
-            if self.distance_between(self.centre, coordinates) < distance_from_centre:
+            # check if generated coordinates are acceptable. If it's not, repeat random coordinate generation
+            if self.distance_between(self.centre, coordinates) < max_allowed_distance:
                 return coordinates
 
     def generate_centre_within_distance_and_contains(self, distance_from_centre, new_radius, final_circle):
@@ -78,7 +83,8 @@ class Circle(MapObject):
         # the distance between the new circle must contain the final circle in its entirety. This can be calculated by
         #   (distance(new_circle, final_circle) + final_circle.radius) < new_circle.radius
         # lazy solution is to spam generate_centre_within_distance, and check if the above math checks out. In the
-        # future we should narrow down the search space for the new circle to improve response times
+        # future we should narrow down the search space for the new circle to improve response times but it's pretty
+        # fast as is
         while True:
             # generate a valid circle which may or may not exclude the final circle
             proposed_centre = self.generate_centre_within_distance(distance_from_centre)
@@ -95,7 +101,6 @@ class GameZone(MapObject):
                  current_circle: Circle = None,
                  next_circle: Circle = None,
                  final_circle: Circle = None):
-        # coordinates of each corner of the map
         self.coordinates = self.game_zone_coordinates_to_float(game_zone_coordinates)
         self.current_circle = current_circle
         self.next_circle = next_circle
@@ -111,7 +116,8 @@ class GameZone(MapObject):
         # if there is a circle already
         if self.current_circle:
             new_radius = self.current_circle.radius*(1-(size_decrease_pct/100))
-            # get distance new circle can be from current circle (distance between circle centres)
+            # get distance next circle can be from current circle (distance between circle centres) such that the
+            # next circle is completely encapsulated by the current circle
             allowed_distance_from_current = self.current_circle.radius - new_radius
 
             # if a final circle has been defined, next circle must include that final circle in its entirety
@@ -119,7 +125,8 @@ class GameZone(MapObject):
 
                 # if final circle radius is greater than new_radius but smaller than current_radius, take final circle
                 if new_radius < self.final_circle.radius < self.current_circle.radius:
-                    return self.final_circle
+                    self.next_circle = self.final_circle
+                    return
 
                 # generate a new circle which encapsulates final circle
                 next_circle_centre = self.current_circle.generate_centre_within_distance_and_contains(
@@ -136,20 +143,19 @@ class GameZone(MapObject):
 
         # no current_circle exists to base next circle off, use entire GameZone to generate a sensible circle
         else:
-            # diameter of next_circle will be 50% of the shortest side of the GameZone
-            game_zone_centre, latitude_distance, longitude_distance = self.get_game_zone_information()
-            shortest_side = min([latitude_distance, longitude_distance])
-            circle_radius = shortest_side/4
+            # diameter of next_circle will be 90% of the shortest side of the GameZone
+            game_zone_centre, width, height = self.get_game_zone_information()
+            circle_radius = width*0.9/2
 
-            # circle will be placed a maximum distance away from the centre of the gamezone equal to half the
-            # longest side of the gamezone itself
-            circle_centre = None
-            allowed_distance = max([latitude_distance, longitude_distance])/2
-            fake_circle = Circle(dict(centre=game_zone_centre))  # use fake circle where centre is centre of the map
+            # circle centre will be placed a maximum distance away from the centre of the gamezone equal to 30% the
+            # shortest side of the Gamezone itself. This means it will never have a centre outside of the Gamezone
+            allowed_distance = width*0.3
+            fake_circle = Circle(dict(centre=game_zone_centre,
+                                      radius=None))  # use fake circle where centre is centre of the map
             if self.final_circle:
                 circle_centre = fake_circle.generate_centre_within_distance_and_contains(allowed_distance,
-                                                                                                  circle_radius,
-                                                                                                  self.final_circle)
+                                                                                         circle_radius,
+                                                                                         self.final_circle)
 
             else:
                 circle_centre = fake_circle.generate_centre_within_distance(allowed_distance)
@@ -160,26 +166,33 @@ class GameZone(MapObject):
         """
         Retrieves approximate coordinate of the centre of the map. We assume the earth to be flat and the game zone
         coordinates to represent an approximate rectangle. Also returns width and height of game zone in degrees.
-        :return: approximate centre of the map coordinates, latitude distance and longitude distance
+        :return: approximate centre of the map coordinates, width and height of game zone
         """
-        # get opposite corners
-        c_lat_1 = self.coordinates['c1']['latitude']
-        c_lat_2 = self.coordinates['c2']['latitude']
-        c_lat_3 = self.coordinates['c3']['latitude']
-        c_lat_4 = self.coordinates['c4']['latitude']
-        c_long_1 = self.coordinates['c1']['longitude']
-        c_long_2 = self.coordinates['c2']['longitude']
-        c_long_3 = self.coordinates['c3']['longitude']
-        c_long_4 = self.coordinates['c4']['longitude']
+        # get length of shortest side and longest side of game zone
+        l1 = self.distance_between(self.coordinates['c1'], self.coordinates['c2'])
+        l2 = self.distance_between(self.coordinates['c1'], self.coordinates['c3'])
+        l3 = self.distance_between(self.coordinates['c1'], self.coordinates['c4'])
+        sorted_sides = sorted([l1, l2, l3])
+        shortest_side = sorted_sides[0]
+        longest_side = sorted_sides[2]
 
-        corner_1 = min([c_lat_1, c_lat_2, c_lat_3, c_lat_4]), min([c_long_1, c_long_2, c_long_3, c_long_4])
-        corner_2 = max([c_lat_1, c_lat_2, c_lat_3, c_lat_4]), max([c_long_1, c_long_2, c_long_3, c_long_4])
+        # get coordinates of approximate centre of game zone
+        all_latitudes = [self.coordinates['c1']['latitude'],
+                         self.coordinates['c2']['latitude'],
+                         self.coordinates['c3']['latitude'],
+                         self.coordinates['c4']['latitude']]
+        all_longitudes = [self.coordinates['c1']['longitude'],
+                          self.coordinates['c2']['longitude'],
+                          self.coordinates['c3']['longitude'],
+                          self.coordinates['c4']['longitude']]
+        corner_1 = min(all_latitudes), min(all_longitudes)
+        corner_2 = max(all_latitudes), max(all_longitudes)
 
         latitude_distance = corner_2[0]-corner_1[0]
         longitude_distance = corner_2[1]-corner_1[1]
         centre = dict(latitude=corner_1[0] + latitude_distance / 2,
                       longitude=corner_1[1] + longitude_distance / 2)
-        return centre, latitude_distance, longitude_distance
+        return centre, shortest_side, longest_side
 
     def game_zone_coordinates_to_float(self, game_zone_coordinates):
         """

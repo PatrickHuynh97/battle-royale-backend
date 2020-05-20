@@ -268,9 +268,10 @@ class TestGameMaster(TestWithMockAWSServices):
         # start game
         self.game_master_1.start_game(lobby.name)
 
-        # get fresh lobby object, assert that game has been started
+        # get fresh lobby object, assert that game has been started and has a started_time
         fresh_lobby = self.game_master_1.get_lobby(lobby_name)
         self.assertEqual(LobbyState.STARTED, fresh_lobby.state)
+        self.assertIsNotNone(fresh_lobby.started_time)
 
         # end game
         self.game_master_1.end_game(lobby.name)
