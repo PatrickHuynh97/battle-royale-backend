@@ -41,6 +41,20 @@ class TestGameZone(unittest.TestCase):
         # the radius of the outer_circle (draw a diagram if you're confused, because this makes sense!!)
         self.assertTrue(centre_distance + inner_circle.radius < outer_circle.radius)
 
+    def test_point_in_circle(self):
+        # test that a given coordinate is within a circle or not for a known set of coordinates
+        coordinate_40m_out = dict(latitude=56.130751, longitude=12.901088)
+        coordinate_21m_out = dict(latitude=56.130736, longitude=12.900766)
+
+        coordinate_10m_out = dict(latitude=56.130741, longitude=12.900585)
+        coordinate_19m_out = dict(latitude=56.130744, longitude=12.900732)
+
+        self.assertFalse(self.final_circle.contains_coordinates(coordinate_40m_out))
+        self.assertFalse(self.final_circle.contains_coordinates(coordinate_21m_out))
+
+        self.assertTrue(self.final_circle.contains_coordinates(coordinate_10m_out))
+        self.assertTrue(self.final_circle.contains_coordinates(coordinate_19m_out))
+
     def test_get_game_zone_information(self):
 
         expected_centre = dict(latitude=56.131533, longitude=12.9000965)
@@ -60,7 +74,7 @@ class TestGameZone(unittest.TestCase):
         )
 
         # generate next circle
-        game_zone.generate_next_circle()
+        game_zone.create_next_circle()
         self.assertIsNotNone(game_zone.next_circle)
 
         next_circle_centre = game_zone.next_circle.centre
@@ -85,7 +99,7 @@ class TestGameZone(unittest.TestCase):
         )
 
         # generate next circle
-        game_zone.generate_next_circle()
+        game_zone.create_next_circle()
         self.assertIsNotNone(game_zone.next_circle)
 
         first_next_circle = game_zone.next_circle
@@ -105,7 +119,7 @@ class TestGameZone(unittest.TestCase):
 
         # manually set current circle to the generated next circle, and generate another one
         game_zone.current_circle = game_zone.next_circle
-        game_zone.generate_next_circle()
+        game_zone.create_next_circle()
 
         second_next_circle = game_zone.next_circle
 
@@ -134,33 +148,33 @@ class TestGameZone(unittest.TestCase):
         gz_max_longitude = max([value['longitude'] for coordinate, value in self.game_zone_coordinates.items()])
 
         # generate first circle, make sure it contains the final_circle and is in the game_zone
-        game_zone.generate_next_circle()
+        game_zone.create_next_circle()
         self.check_if_circle_contains_circle(game_zone.next_circle, game_zone.final_circle)
         self.assertTrue(float(gz_min_latitude) < game_zone.next_circle.centre['latitude'] < float(gz_max_latitude))
         self.assertTrue(float(gz_min_longitude) < game_zone.next_circle.centre['longitude'] < float(gz_max_longitude))
 
         # manually set first circle to current_circle, and generate the second circle
         game_zone.current_circle = game_zone.next_circle
-        game_zone.generate_next_circle()
+        game_zone.create_next_circle()
         self.check_if_circle_contains_circle(game_zone.next_circle, game_zone.final_circle)
 
         # manually set second circle to current_circle, and generate the third circle
         game_zone.current_circle = game_zone.next_circle
-        game_zone.generate_next_circle()
+        game_zone.create_next_circle()
         self.check_if_circle_contains_circle(game_zone.next_circle, game_zone.final_circle)
 
         # manually set third circle to current_circle, and generate the fourth circle
         game_zone.current_circle = game_zone.next_circle
-        game_zone.generate_next_circle()
+        game_zone.create_next_circle()
         self.check_if_circle_contains_circle(game_zone.next_circle, game_zone.final_circle)
 
         # manually set fourth circle to current_circle, and generate the fifth circle
         game_zone.current_circle = game_zone.next_circle
-        game_zone.generate_next_circle()
+        game_zone.create_next_circle()
         self.check_if_circle_contains_circle(game_zone.next_circle, game_zone.final_circle)
 
         # manually set fifth circle to current_circle, and try to generate the sixth circle
         game_zone.current_circle = game_zone.next_circle
-        game_zone.generate_next_circle()
+        game_zone.create_next_circle()
         # sixth circle will be the same as the final circle
         self.assertEqual(game_zone.next_circle, self.final_circle)

@@ -2,6 +2,10 @@ from math import cos, pi
 from geopy import distance
 import random
 
+from configuration import Configuration
+
+CIRCLE_CONFIG = Configuration().get_configuration()['DEFAULT_CIRCLE_CONFIG']
+
 
 class MapObject:
     @staticmethod
@@ -47,6 +51,15 @@ class Circle(MapObject):
             centre=self.coordinate_to_string(self.centre),
             radius=str(self.radius)
         )
+
+    def contains_coordinates(self, coordinates):
+        """
+        Checks if the provided coordinates are contained self
+        :param coordinates: set of coordinates to check if they are within self
+        :return: True if the provided coordinates are contained within self, else False
+
+        """
+        return self.distance_between(self.centre, coordinates) < self.radius
 
     def generate_centre_within_distance(self, max_allowed_distance):
         """
@@ -106,9 +119,9 @@ class GameZone(MapObject):
         self.next_circle = next_circle
         self.final_circle = final_circle
 
-    def generate_next_circle(self, size_decrease_pct=33):
+    def create_next_circle(self, size_decrease_pct=33):
         """
-        Generates the next circle to be used as the play area.  If a final circle location was given, the generated
+        Creates the next circle to be used as the play area.  If a final circle location was given, the generated
         circle will include it in it's entirety.
         :param size_decrease_pct: percentage to decrease the circle by. By default circle size is reduced by 33%
         :return: New circle coordinates
@@ -161,6 +174,21 @@ class GameZone(MapObject):
                 circle_centre = fake_circle.generate_centre_within_distance(allowed_distance)
 
             self.next_circle = Circle(dict(centre=circle_centre, radius=circle_radius))
+
+    def close_current_circle(self):
+        """
+        Begins the process of closing the current_circle to become the next_circle. create_next_circle should be called
+        before this in order to get a next_circle. Closing a circle is done by first checkout how far the outer
+        circle is from the inner circle. We then generate a set of "intermediate circles", where each intermediate
+        circle centre is along the straight line between the outer and inner circle centres. Each intermediate circle
+        moves some fraction closer to the inner circle, and the radius reduces by the same fraction, resulting in a
+        smooth transition between outer and inner circle.
+
+        :return: None
+        """
+        if self.current_circle:
+            distance_between_centres = self.distance_between(self.current_circle.centre, self.next_circle.centre)
+            # todo use CIRCLE_CONFIG to decide how fast the circle should be closed
 
     def get_game_zone_information(self):
         """

@@ -1,0 +1,39 @@
+{
+  "DEFAULT_CIRCLE_CONFIG": {
+    "circle_closing_rates": {
+      "1000": {
+        "closing_rate": 15
+      },
+      "750": {
+        "closing_rate": 14
+      },
+      "500": {
+        "closing_rate": 12
+      },
+      "400": {
+        "closing_rate": 10
+      },
+      "300": {
+        "closing_rate": 9
+      },
+      "200": {
+        "closing_rate": 8
+      },
+      "150": {
+        "closing_rate": 7
+      },
+      "100": {
+        "closing_rate": 6
+      },
+      "75": {
+        "closing_rate":4
+      },
+      "50": {
+        "closing_rate":3
+      },
+      "25": {
+        "closing_rate":1.5
+      }
+    }
+  }
+}

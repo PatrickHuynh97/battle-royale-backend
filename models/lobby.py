@@ -403,9 +403,18 @@ class Lobby:
             },
             AttributeUpdates={f'PLAYER#{player.username}': dict(Value=PlayerState.ALIVE.value)})
 
+    def generate_next_circle(self):
+        """
+        Called directly after the current circle has finished closing, or if no circle exists
+        :return: None
+        """
+        # generate the next circle given the current circle (or lack thereof)
+        self.game_zone.create_next_circle()
+        self.next_circle = self.game_zone.next_circle
+
     def close_current_circle(self):
         """
-        Begins the closing of the current circle
+        Begins the closing of the current circle (if it exist) to become the next_circle
         :return: None
         """
         self.game_zone.close_current_circle()

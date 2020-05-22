@@ -80,14 +80,14 @@ functions:
 
 package:
   include:
-    - 'api/*'
     - 'db/*'
-    - 'models/*'
-    - 'user_management/*'
-    - 'serverless_config/*'
     - 'handlers/*'
+    - 'models/*'
+    - 'serverless_config/*'
+    - 'websockets/*'
   exclude:
     - 'node_modules'
+    - 'tests/*'
 plugins:
   - serverless-python-requirements
   - serverless-aws-documentation
