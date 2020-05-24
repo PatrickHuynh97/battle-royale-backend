@@ -2,12 +2,8 @@ createLobby:
   handler: handlers.game_master_handlers.create_lobby_handler
   events:
     - http:
-        path: /game-master/{username}/lobby
+        path: /game-master/lobby
         method: post
-        request:
-          parameters:
-            paths:
-              username: true
         authorizer:
           type: COGNITO_USER_POOLS
           authorizerId:
@@ -19,7 +15,7 @@ createLobby:
           requestBody:
             description: "JSON containing lobby name"
           requestModels:
-            "application/json": LobbyRequest
+            "application/json": GameMasterLobbyRequest
           methodResponses:
             - statusCode: "200"
               responseBody:
@@ -37,11 +33,7 @@ getLobby:
   handler: handlers.game_master_handlers.get_lobby_handler
   events:
     - http:
-        path: /game-master/{username}/lobby
-        request:
-          parameters:
-            paths:
-              username: true
+        path: /game-master/lobby
         method: get
         authorizer:
           type: COGNITO_USER_POOLS
@@ -52,9 +44,7 @@ getLobby:
           tags:
             - "Game Master Endpoints"
           requestBody:
-            description: "JSON containing lobby name"
-          requestModels:
-            "application/json": LobbyRequest
+            description: "None"
           methodResponses:
             - statusCode: "200"
               responseBody:
@@ -74,12 +64,8 @@ deleteLobby:
   handler: handlers.game_master_handlers.delete_lobby_handler
   events:
     - http:
-        path: /game-master/{username}/lobby
+        path: /game-master/lobby
         method: delete
-        request:
-          parameters:
-            paths:
-              username: true
         authorizer:
           type: COGNITO_USER_POOLS
           authorizerId:
@@ -88,10 +74,6 @@ deleteLobby:
           summary: "Deletes a lobby owned by calling user"
           tags:
             - "Game Master Endpoints"
-          requestBody:
-            description: "JSON containing lobby name"
-          requestModels:
-            "application/json": LobbyRequest
           methodResponses:
             - statusCode: "200"
               responseBody:
@@ -109,11 +91,10 @@ addSquadToLobby:
   handler: handlers.game_master_handlers.add_squad_to_lobby_handler
   events:
     - http:
-        path: /game-master/{username}/lobby/{lobby}/squads
+        path: /game-master/lobby/{lobby}/squads
         request:
           parameters:
             paths:
-              username: true
               lobby: true
         method: post
         authorizer:
@@ -145,11 +126,10 @@ removeSquadFromLobby:
   handler: handlers.game_master_handlers.remove_squad_from_lobby_handler
   events:
     - http:
-        path: /game-master/{username}/lobby/{lobby}/squads
+        path: /game-master/lobby/{lobby}/squads
         request:
           parameters:
             paths:
-              username: true
               lobby: true
         method: delete
         authorizer:
@@ -181,11 +161,10 @@ getPlayersInLobby:
   handler: handlers.game_master_handlers.get_players_in_lobby_handler
   events:
     - http:
-        path: /game-master/{username}/lobby/{lobby}/players
+        path: /game-master/lobby/{lobby}/players
         request:
           parameters:
             paths:
-              username: true
               lobby: true
         method: post
         authorizer:
@@ -217,11 +196,10 @@ updateLobby:
   handler: handlers.game_master_handlers.update_lobby_handler
   events:
     - http:
-        path: /game-master/{username}/lobby/{lobby}/settings
+        path: /game-master/lobby/{lobby}/settings
         request:
           parameters:
             paths:
-              username: true
               lobby: true
         method: post
         authorizer:
@@ -253,11 +231,10 @@ startLobby:
   handler: handlers.game_master_handlers.start_lobby_handler
   events:
     - http:
-        path: /game-master/{username}/lobby/{lobby}/start
+        path: /game-master/lobby/{lobby}/start
         request:
           parameters:
             paths:
-              username: true
               lobby: true
         method: post
         authorizer:
@@ -285,11 +262,10 @@ endLobby:
   handler: handlers.game_master_handlers.start_lobby_handler
   events:
     - http:
-        path: /game-master/{username}/lobby/{lobby}/end
+        path: /game-master/lobby/{lobby}/end
         request:
           parameters:
             paths:
-              username: true
               lobby: true
         method: post
         authorizer:

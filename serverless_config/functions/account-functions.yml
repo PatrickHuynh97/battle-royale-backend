@@ -1,8 +1,8 @@
 signUp:
-    handler: handlers.authorization_handlers.sign_up_handler
+    handler: handlers.account_handlers.sign_up_handler
     events:
       - http:
-          path: /user_management/sign_up
+          path: /user-management/sign-up
           method: post
           documentation:
             summary: "Sign up a new User"
@@ -26,10 +26,10 @@ signUp:
         Fn::GetAtt: [BattleRoyaleTable, Arn]
 
 signIn:
-  handler: handlers.authorization_handlers.sign_in_handler
+  handler: handlers.account_handlers.sign_in_handler
   events:
     - http:
-        path: /user_management/sign_in
+        path: /user-management/sign-in
         method: post
         documentation:
           summary: "Sign in a User"
@@ -53,10 +53,10 @@ signIn:
       Ref: CognitoUserPool
 
 signOut:
-  handler: handlers.authorization_handlers.sign_out_handler
+  handler: handlers.account_handlers.sign_out_handler
   events:
     - http:
-        path: /user_management/sign_out
+        path: /user-management/sign-out
         method: post
         authorizer:
           type: COGNITO_USER_POOLS
@@ -82,11 +82,15 @@ signOut:
       Ref: CognitoUserPool
 
 refreshTokens:
-  handler: handlers.authorization_handlers.refresh_tokens_handler
+  handler: handlers.account_handlers.refresh_tokens_handler
   events:
     - http:
-        path: /user_management/refresh
+        path: /user-management/refresh
         method: post
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId:
+            Ref: ApiGatewayAuthorizer
         documentation:
           summary: "Refreshes a User's tokens"
           tags:
@@ -107,3 +111,33 @@ refreshTokens:
       Ref: CognitoUserPoolClient
     USER_POOL_ID:
       Ref: CognitoUserPool
+
+
+deleteUser:
+  handler: handlers.account_handlers.delete_user_handler
+  events:
+    - http:
+        path: /user-management/delete-user
+        method: post
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId:
+            Ref: ApiGatewayAuthorizer
+        documentation:
+          summary: "Delete calling user from the Battle Royale system along with all their squads"
+          tags:
+            - "Authorization"  # put this with authorization since it uses access token, for now
+          requestModels:
+            "application/json": DeleteUserRequest
+          methodResponses:
+            - statusCode: "200"
+              responseBody:
+                description: "None"
+            - ${self:custom.commonModelSchemaFragments.AuthorizationException}
+  environment:
+    USER_POOL_CLIENT_ID:
+      Ref: CognitoUserPoolClient
+    USER_POOL_ID:
+      Ref: CognitoUserPool
+    TABLE:
+      Fn::GetAtt: [BattleRoyaleTable, Arn]

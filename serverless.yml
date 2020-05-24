@@ -72,8 +72,7 @@ provider:
       Resource: "*"
 
 functions:
-  - ${file(serverless_config/functions/authorization-functions.yml)}
-  - ${file(serverless_config/functions/user-functions.yml)}
+  - ${file(serverless_config/functions/account-functions.yml)}
   - ${file(serverless_config/functions/player-functions.yml)}
   - ${file(serverless_config/functions/game-master-functions.yml)}
   - ${file(serverless_config/functions/websocket-functions.yml)}

@@ -5,7 +5,7 @@ from models.squad import Squad
 
 
 @endpoint()
-def create_lobby(event, context):
+def create_lobby_handler(event, context):
     """
     Handler for creating a lobby.
     """
@@ -26,9 +26,9 @@ def get_lobby_handler(event, context):
     Handler for getting a lobby, information about the lobby, and all squads in the lobby.
     """
     username = event['calling_user']
-    lobby_name = event['body']['name']
-
-    lobby = GameMaster(username).get_lobby(lobby_name)
+    gamemaster = GameMaster(username)
+    gamemaster.get()
+    lobby = gamemaster.get_lobby()
     lobby.get_squads()
 
     return {

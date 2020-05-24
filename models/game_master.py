@@ -109,13 +109,12 @@ class GameMaster(user.User):
         self.set_no_lobby()
         return lobby
 
-    def get_lobby(self, lobby_name):
+    def get_lobby(self):
         """
-        Get a lobby owned by Game Master
-        :param lobby_name: name of lobby to get
+        Get a lobby owned by Game Master if they are currently in one. self.get() should be called before calling this
         :return: Game lobby object
         """
-        lobby = lobby_model.Lobby(lobby_name, owner=self)
+        lobby = lobby_model.Lobby(self.lobby.name, owner=self)
         lobby.get()
         return lobby
 

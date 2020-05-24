@@ -1,10 +1,9 @@
 import json
+import os
 import botocore
-
 from unittest import mock
 from exceptions import UserAlreadyExistsException, SquadAlreadyExistsException, PlayerOwnsSquadException, \
     PlayerDoesNotOwnSquadException, UserAlreadyMemberException, LobbyNotStartedException
-from handlers import authorization_handlers
 from handlers.player_handlers import get_owned_squads_handler, set_dead_handler, set_alive_handler, \
     get_current_lobby_handler
 from handlers.schemas import LobbySchema
@@ -14,6 +13,9 @@ from models.player import Player
 from models.squad import Squad
 from tests.helper_functions import make_api_gateway_event, create_test_players
 from tests.mock_db import TestWithMockAWSServices
+
+os.environ['local_test'] = "True"  # must be set to prevent jwt file http GET from being called in 'handlers' import
+from handlers import account_handlers
 
 
 class TestPlayer(TestWithMockAWSServices):
@@ -41,7 +43,7 @@ class TestPlayer(TestWithMockAWSServices):
 
         # go through handler to create duplicate
         event, context = make_api_gateway_event(body={'username': username})
-        res = authorization_handlers.sign_up_handler(event, context)
+        res = account_handlers.sign_up_handler(event, context)
         body = json.loads(res['body'])
 
         # assert that a duplicate player was not created

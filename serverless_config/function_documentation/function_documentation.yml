@@ -92,13 +92,17 @@
           $ref: "{{model: UsernameSchema}}"
 
 -
-  name: LobbyRequest
+  name: GameMasterLobbyRequest
   contentType: "application/json"
   schema:
     type: object
     properties:
       name:
         type: string
+      lobby_size:
+        type: number
+      squad_size:
+        type: number
 
 -
   name: LobbySquadRequest

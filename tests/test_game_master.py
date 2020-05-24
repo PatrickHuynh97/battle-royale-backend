@@ -126,7 +126,7 @@ class TestGameMaster(TestWithMockAWSServices):
         self.assertRaises(SquadInLobbyException, lobby.add_squad, self.squad_1)
 
         # get fresh lobby object try to add same squad into lobby
-        fresh_lobby = self.game_master_1.get_lobby(lobby_name)
+        fresh_lobby = self.game_master_1.get_lobby()
         with self.assertRaises(SquadInLobbyException):
             self.game_master_1.add_squad_to_lobby(lobby_name, self.squad_1)
         fresh_lobby.get_squads()
@@ -175,12 +175,12 @@ class TestGameMaster(TestWithMockAWSServices):
     def test_remove_squad_from_lobby(self):
         # create a lobby and add two squads
         lobby_name = 'test-lobby'
-        lobby = self.game_master_1.create_lobby(lobby_name, size=20)
+        self.game_master_1.create_lobby(lobby_name, size=20)
         self.game_master_1.add_squad_to_lobby(lobby_name, self.squad_1)
         self.game_master_1.add_squad_to_lobby(lobby_name, self.squad_2)
 
         # get fresh lobby object and populate squads
-        fresh_lobby = self.game_master_1.get_lobby(lobby_name)
+        fresh_lobby = self.game_master_1.get_lobby()
         fresh_lobby.get_squads()
         self.assertTrue(2, len(fresh_lobby.squads))
 
@@ -189,7 +189,7 @@ class TestGameMaster(TestWithMockAWSServices):
         self.assertTrue(1, len(fresh_lobby.squads))
 
         # get fresh lobby object again and populate squads
-        fresh_lobby = self.game_master_1.get_lobby(lobby_name)
+        fresh_lobby = self.game_master_1.get_lobby()
         fresh_lobby.get_squads()
         self.assertTrue(1, len(fresh_lobby.squads))
 
@@ -200,7 +200,7 @@ class TestGameMaster(TestWithMockAWSServices):
         self.game_master_1.add_squad_to_lobby(lobby_name, self.squad_1)
 
         # get fresh lobby object and retrieve squads in it
-        fresh_lobby = self.game_master_1.get_lobby(lobby_name)
+        fresh_lobby = self.game_master_1.get_lobby()
         self.assertFalse(fresh_lobby.squads)
         fresh_lobby.get_squads()
         self.assertIn(self.squad_1, fresh_lobby.squads)
@@ -217,7 +217,7 @@ class TestGameMaster(TestWithMockAWSServices):
         squad_size = 3
         self.game_master_1.create_lobby(lobby_name, size=lobby_size, squad_size=squad_size)
 
-        lobby = self.game_master_1.get_lobby(lobby_name)
+        lobby = self.game_master_1.get_lobby()
         self.assertEqual(self.game_master_1, lobby.owner)
         self.assertEqual(lobby_size, lobby.size)
         self.assertEqual(squad_size, lobby.squad_size)
@@ -252,7 +252,7 @@ class TestGameMaster(TestWithMockAWSServices):
                                         squad_size=new_squad_size,
                                         game_zone_coordinates=game_zone_coordinates)
 
-        lobby = self.game_master_1.get_lobby(lobby_name)
+        lobby = self.game_master_1.get_lobby()
         self.assertEqual(new_lobby_size, lobby.size)
         self.assertEqual(new_squad_size, lobby.squad_size)
         self.assertEqual(game_zone_coordinates_as_float, lobby.game_zone.coordinates)
@@ -269,7 +269,7 @@ class TestGameMaster(TestWithMockAWSServices):
         self.game_master_1.start_game(lobby.name)
 
         # get fresh lobby object, assert that game has been started and has a started_time
-        fresh_lobby = self.game_master_1.get_lobby(lobby_name)
+        fresh_lobby = self.game_master_1.get_lobby()
         self.assertEqual(LobbyState.STARTED, fresh_lobby.state)
         self.assertIsNotNone(fresh_lobby.started_time)
 
@@ -277,7 +277,7 @@ class TestGameMaster(TestWithMockAWSServices):
         self.game_master_1.end_game(lobby.name)
 
         # get another fresh lobby object, assert that game is finished
-        fresh_lobby = self.game_master_1.get_lobby(lobby_name)
+        fresh_lobby = self.game_master_1.get_lobby()
         self.assertEqual(LobbyState.FINISHED, fresh_lobby.state)
 
     def test_start_finished_game_start_started_game(self):
@@ -293,11 +293,11 @@ class TestGameMaster(TestWithMockAWSServices):
         self.game_master_1.end_game(lobby.name)
 
         # assert that game is in finished state, and start it again
-        lobby = self.game_master_1.get_lobby(lobby_name)
+        lobby = self.game_master_1.get_lobby()
         self.assertEqual(LobbyState.FINISHED, lobby.state)
         self.game_master_1.start_game(lobby.name)
 
-        lobby = self.game_master_1.get_lobby(lobby_name)
+        lobby = self.game_master_1.get_lobby()
         self.assertEqual(LobbyState.STARTED, lobby.state)
 
         # try to start game again

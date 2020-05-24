@@ -2,12 +2,8 @@ createSquad:
   handler: handlers.player_handlers.create_squad_handler
   events:
     - http:
-        path: /player/{username}/squads
+        path: /player/squads
         method: post
-        request:
-          parameters:
-            paths:
-              username: true
         authorizer:
           type: COGNITO_USER_POOLS
           authorizerId:
@@ -37,12 +33,8 @@ deleteSquad:
   handler: handlers.player_handlers.delete_squad_handler
   events:
     - http:
-        path: /player/{username}/squads
+        path: /player/squads
         method: delete
-        request:
-          parameters:
-            paths:
-              username: true
         authorizer:
           type: COGNITO_USER_POOLS
           authorizerId:
@@ -72,11 +64,10 @@ addUserToSquad:
   handler: handlers.player_handlers.add_user_to_squad_handler
   events:
     - http:
-        path: /player/{username}/squads/{squadname}/member
+        path: /player/squads/{squadname}/member
         request:
           parameters:
             paths:
-              username: true
               squadname: true
         method: post
         authorizer:
@@ -108,11 +99,10 @@ removeMemberFromSquad:
   handler: handlers.player_handlers.remove_member_from_squad_handler
   events:
     - http:
-        path: /player/{username}/squads/{squadname}/member
+        path: /player/squads/{squadname}/member
         request:
           parameters:
             paths:
-              username: true
               squadname: true
         method: delete
         authorizer:
@@ -144,11 +134,7 @@ getOwnedSquads:
   handler: handlers.player_handlers.get_owned_squads_handler
   events:
     - http:
-        path: /player/{username}/squads/me
-        request:
-          parameters:
-            paths:
-              username: true
+        path: /player/squads/me
         method: get
         authorizer:
           type: COGNITO_USER_POOLS
@@ -177,11 +163,7 @@ getNotOwnedSquads:
   handler: handlers.player_handlers.get_not_owned_squads_handler
   events:
     - http:
-        path: /player/{username}/squads/others
-        request:
-          parameters:
-            paths:
-              username: true
+        path: /player/squads/others
         method: get
         authorizer:
           type: COGNITO_USER_POOLS
@@ -210,18 +192,14 @@ getCurrentLobby:
   handler: handlers.player_handlers.get_current_lobby_handler
   events:
     - http:
-        path: /player/{username}/lobby
-        request:
-          parameters:
-            paths:
-              username: true
+        path: /player/lobby
         method: get
         authorizer:
           type: COGNITO_USER_POOLS
           authorizerId:
             Ref: ApiGatewayAuthorizer
         documentation:
-          summary: "Get information about Lobby calling user is in"
+          summary: "Get information about Lobby player is in"
           tags:
             - "Player Endpoints"
           methodResponses:
@@ -243,11 +221,7 @@ setDead:
   handler: handlers.player_handlers.set_dead_handler
   events:
     - http:
-        path: /player/{username}/dead
-        request:
-          parameters:
-            paths:
-              username: true
+        path: /player/dead
         method: post
         authorizer:
           type: COGNITO_USER_POOLS
@@ -274,11 +248,7 @@ setAlive:
   handler: handlers.player_handlers.set_dead_handler
   events:
     - http:
-        path: /player/{username}/alive
-        request:
-          parameters:
-            paths:
-              username: true
+        path: /player/alive
         method: post
         authorizer:
           type: COGNITO_USER_POOLS
@@ -305,11 +275,10 @@ pullSquadFromLobby:
   handler: handlers.player_handlers.pull_squad_from_lobby_handler
   events:
     - http:
-        path: /player/{username}/squads/{squadname}/leave-lobby
+        path: /player/squads/{squadname}/leave-lobby
         request:
           parameters:
             paths:
-              username: true
               squadname: true
         method: post
         authorizer:

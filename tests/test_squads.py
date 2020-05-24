@@ -34,7 +34,7 @@ class TestSquads(TestWithMockAWSServices):
         self.assertEqual(lobby, _lobby)
 
         # get fresh lobby object, make sure everything checks out
-        fresh_lobby = game_master.get_lobby(lobby.name)
+        fresh_lobby = game_master.get_lobby()
         fresh_lobby.get_squads()
         self.assertIn(squad, fresh_lobby.squads)
         squad.get()

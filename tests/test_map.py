@@ -12,7 +12,7 @@ class TestGameZone(unittest.TestCase):
         #   top left 56.132757, 12.897615
         #   bottom left 56.130781, 12.896993
         #   bottom right 56.130309, 12.902884
-        # final zone is middle of the CQB field and is 40 meters in diamter
+        # final zone is middle of the CQB field and is 40 meters in diameter
         #   56.130722, 12.900430, radius 35 meters
 
         self.game_zone_coordinates = dict(
