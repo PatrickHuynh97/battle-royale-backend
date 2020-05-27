@@ -16,6 +16,8 @@ custom:
         description: "Endpoints where the calling user is modelled as a Player"
       - name: "Game Master Endpoints"
         description: "Endpoints where the calling user is modelled as a GameMaster"
+      - name: "Test Endpoints"
+        description: "Endpoints for generating test data"
     models: ${file(serverless_config/function_documentation/function_documentation.yml)} # todo break this up into smaller files
   commonModelSchemaFragments:
     # common fragments
@@ -76,6 +78,7 @@ functions:
   - ${file(serverless_config/functions/player-functions.yml)}
   - ${file(serverless_config/functions/game-master-functions.yml)}
   - ${file(serverless_config/functions/websocket-functions.yml)}
+  - ${file(serverless_config/functions/test-functions.yml)}
 
 package:
   include:

@@ -31,10 +31,21 @@ def endpoint(response_schema=None, request_schema=None):
 
             return {
                 'statusCode': 200,
-                'body': response_schema().dumps(result) if response_schema else result
+                'body': postload_body(result, response_schema)
             }
         return wrapper
     return lambda_wrapper
+
+
+def postload_body(body, response_schema=None):
+    # try to load body in schema if given, otherwise try to dump it into as string. If this fails, raise an error
+    if response_schema:
+        return response_schema().dumps(body)
+    else:
+        try:
+            return json.dumps(body)
+        except Exception as e:
+            raise ApiException("Response is not a valid JSON", extras=e)
 
 
 def set_calling_user(event):
