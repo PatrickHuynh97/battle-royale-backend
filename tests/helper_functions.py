@@ -1,4 +1,5 @@
 import json
+from random import randint
 
 from models.game_master import GameMaster
 from models.player import Player
@@ -40,7 +41,7 @@ def create_test_squads(players: list):
     squads = []
     squad_count = 1
     for player in players:
-        squad = player.create_squad(f'squad_{squad_count}')
+        squad = player.create_squad(f'squad_{randint(0,10000)}_{squad_count}')
         squad_count += 1
         squads.append(squad)
     return squads

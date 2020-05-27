@@ -274,6 +274,19 @@
         items:
           $ref: "{{model: UsernameSchema}}"
 
+# TEST FUNCTIONS
+
+-
+  name: CreateTestPlayersAndSquadsResponse
+  contentType: "application/json"
+  schema:
+    type: object
+    properties:
+      squads:
+        type: array
+        items:
+          $ref: "{{model: SquadSchema}}"
+
 # EXCEPTIONS
 -
   name: AuthorizationException

@@ -1,0 +1,29 @@
+createTestPlayersAndSquads:
+  handler: handlers.test_handlers.create_test_players_and_squads_handler
+  events:
+    - http:
+        path: /test/create-players-and-squads
+        method: post
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId:
+            Ref: ApiGatewayAuthorizer
+        documentation:
+          summary: "Create 9 test players and 3 test squads, each of which contains 3 of said created test players"
+          tags:
+            - "Test Endpoints"
+          requestBody:
+            description: "JSON containing name of squad to be created"
+          responseModels:
+            "application/json": CreateTestPlayersAndSquadsResponse
+          methodResponses:
+            - statusCode: "200"
+              responseBody:
+                description: "JSON containing newly created test squads and their members"
+  environment:
+    USER_POOL_CLIENT_ID:
+      Ref: CognitoUserPoolClient
+    USER_POOL_ID:
+      Ref: CognitoUserPool
+    TABLE:
+      Fn::GetAtt: [BattleRoyaleTable, Arn]

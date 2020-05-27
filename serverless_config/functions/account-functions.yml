@@ -112,7 +112,6 @@ refreshTokens:
     USER_POOL_ID:
       Ref: CognitoUserPool
 
-
 deleteUser:
   handler: handlers.account_handlers.delete_user_handler
   events:

@@ -43,7 +43,7 @@ class Squad:
                 'lobby-name': None
             }
         )
-
+        self.owner = owner
         self.add_member(owner)
 
     def delete(self):
