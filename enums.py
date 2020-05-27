@@ -26,3 +26,17 @@ class WebSocketEventType(Enum):
 
 class GameMasterMessageType(Enum):
     EXAMPLE = 'example'
+
+
+class SQSEventType(Enum):
+    FIRST_CIRCLE = 'first_circle'
+    CLOSE_CIRCLE = 'close_circle'
+
+
+class WebSocketPushMessageType(Enum):
+    GAME_STATE = 'game_state'
+    PLAYER_DEAD = 'player_dead'
+    PLAYER_LOCATION = 'player_location'
+    CIRCLE_CLOSING = 'circle_closing'
+    NEXT_CIRCLE = 'next_circle'
+    GAME_MASTER_MESSAGE = 'game_master_message'

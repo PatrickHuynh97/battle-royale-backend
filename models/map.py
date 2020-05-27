@@ -3,6 +3,7 @@ from geopy import distance
 import random
 
 from configuration import Configuration
+from websockets import connection_manager as cm
 
 CIRCLE_CONFIG = Configuration().get_configuration()['DEFAULT_CIRCLE_CONFIG']
 
@@ -46,7 +47,7 @@ class Circle(MapObject):
             return self.centre == other.centre and self.radius == other.radius
         return False
 
-    def circle_to_string(self):
+    def to_string(self):
         return dict(
             centre=self.coordinate_to_string(self.centre),
             radius=str(self.radius)
@@ -106,6 +107,72 @@ class Circle(MapObject):
                 # proposed next circle contains the final circle, return
                 return proposed_centre
 
+    def generate_intermediate_circles(self, inner_circle):
+        """
+        Generates a list of sequential circles which closes Self towards inner_circle
+        :param inner_circle: Circle to close Self towards
+        :return: dict containing each sequential circle to which will lead towards inner_circle
+        """
+        closing_rate = self.get_closing_rate()
+
+        radius_difference = self.radius - inner_circle.radius
+        if not radius_difference:
+            radius_difference = self.radius  # circle is closing towards itself (final circle)
+        number_of_intermediate_circles = round(radius_difference / closing_rate)
+
+        # X and Y distance between self and inner_circle, and the differnece in radius
+        lat_distance = self.centre['latitude'] - inner_circle.centre['latitude']
+        long_distance = self.centre['longitude'] - inner_circle.centre['longitude']
+
+        # amount to increment lat/long/radius with each intermediate circle
+        lat_change = lat_distance / number_of_intermediate_circles
+        long_change = long_distance / number_of_intermediate_circles
+        radius_change = radius_difference / number_of_intermediate_circles
+
+        intermediate_circles = []
+        last_intermediate_circle_centre = None
+        last_intermediate_circle_radius = None
+        for i in range(0, number_of_intermediate_circles):
+            # if we are on the penultimate intermediate circle, just make it the inner_circle exactly
+            if i == number_of_intermediate_circles - 1:
+                intermediate_circles.append(dict(centre=inner_circle.centre, radius=inner_circle.radius))
+            elif not last_intermediate_circle_centre:
+                intermediate_circle_centre = dict(
+                    latitude=self.centre['latitude'] - lat_change,
+                    longitude=self.centre['longitude'] - long_change
+                )
+                last_intermediate_circle_radius = self.radius - radius_change
+                last_intermediate_circle_centre = intermediate_circle_centre
+
+                intermediate_circles.append(dict(centre=intermediate_circle_centre,
+                                                 radius=last_intermediate_circle_radius))
+            else:
+                intermediate_circle_centre = dict(
+                    latitude=last_intermediate_circle_centre['latitude'] - lat_change,
+                    longitude=last_intermediate_circle_centre['longitude'] - long_change
+                )
+                last_intermediate_circle_radius = last_intermediate_circle_radius - radius_change
+                last_intermediate_circle_centre = intermediate_circle_centre
+
+                intermediate_circles.append(dict(centre=intermediate_circle_centre,
+                                                 radius=last_intermediate_circle_radius))
+
+        return intermediate_circles
+
+    def get_closing_rate(self):
+        """
+        Gets closing rate given radius of self
+        :return: closing rate as float
+        """
+        last_rate = None
+        for closing_rate, value in CIRCLE_CONFIG['CLOSING_RATES'].items():
+            if not last_rate or not float(closing_rate) < self.radius < float(last_rate):
+                last_rate = closing_rate
+            else:
+                return CIRCLE_CONFIG['CLOSING_RATES'][last_rate]
+        # if the circle is very small and has no associated rate, just take the slowest
+        return CIRCLE_CONFIG['CLOSING_RATES'][last_rate]
+
 
 class GameZone(MapObject):
     # class representing the entire playable area and the circles within it.
@@ -153,11 +220,10 @@ class GameZone(MapObject):
                 allowed_distance_from_current = self.current_circle.radius - new_radius
                 next_circle_centre = self.current_circle.generate_centre_within_distance(allowed_distance_from_current)
                 self.next_circle = Circle(dict(centre=next_circle_centre, radius=new_radius))
-
         # no current_circle exists to base next circle off, use entire GameZone to generate a sensible circle
         else:
             # diameter of next_circle will be 90% of the shortest side of the GameZone
-            game_zone_centre, width, height = self.get_game_zone_information()
+            game_zone_centre, width, diagonal = self.get_game_zone_information()
             circle_radius = width*0.9/2
 
             # circle centre will be placed a maximum distance away from the centre of the gamezone equal to 30% the
@@ -175,25 +241,40 @@ class GameZone(MapObject):
 
             self.next_circle = Circle(dict(centre=circle_centre, radius=circle_radius))
 
-    def close_current_circle(self):
+    def close_to_next_circle(self, lobby):
         """
-        Begins the process of closing the current_circle to become the next_circle. create_next_circle should be called
-        before this in order to get a next_circle. Closing a circle is done by first checkout how far the outer
-        circle is from the inner circle. We then generate a set of "intermediate circles", where each intermediate
-        circle centre is along the straight line between the outer and inner circle centres. Each intermediate circle
-        moves some fraction closer to the inner circle, and the radius reduces by the same fraction, resulting in a
-        smooth transition between outer and inner circle.
-
+        Contains the process of closing towards the next_circle. create_next_circle must be called before this in order
+        to get a next_circle.
+        To close a circle, we generate a set of "intermediate circles", where each intermediate centre is along the
+        straight line between the outer and inner circle centres. Each intermediate circle moves some fraction closer
+        to the inner circle, and the radius reduces by the same fraction, resulting in a smooth transition between
+        outer and inner circle.
+        The rate at which a circle closes is dependent on its radius- larger circles close faster than smaller ones.
+        The default CLOSING_RATES in CIRCLE_CONFIG dictates how fast the circle should close with respect to the
+        edges moving inwards.
         :return: None
         """
-        if self.current_circle:
-            distance_between_centres = self.distance_between(self.current_circle.centre, self.next_circle.centre)
-            # todo use CIRCLE_CONFIG to decide how fast the circle should be closed
+        if self.current_circle and self.current_circle == self.final_circle:
+            # the current_circle is the final_circle
+            intermediate_circles = self.current_circle.generate_intermediate_circles(self.final_circle)
+        elif self.current_circle:
+            # get closing rate of circle given the radius of the current circle
+            intermediate_circles = self.current_circle.generate_intermediate_circles(self.next_circle)
+        else:
+            # game has not had a circle close yet. Mock a circle bigger than the whole map and close that
+            game_zone_centre, width, diagonal = self.get_game_zone_information()
+            mock_circle = Circle(dict(centre=self.next_circle.centre, radius=diagonal))
+            intermediate_circles = mock_circle.generate_intermediate_circles(self.next_circle)
+
+        # push each intermediate circle to clients. Once complete, set current_circle
+        connection_manager = cm.ConnectionManager()
+        connection_manager.push_circle_updates(intermediate_circles, lobby=lobby)
+        self.current_circle = self.next_circle
 
     def get_game_zone_information(self):
         """
         Retrieves approximate coordinate of the centre of the map. We assume the earth to be flat and the game zone
-        coordinates to represent an approximate rectangle. Also returns width and height of game zone in degrees.
+        coordinates to represent an approximate rectangle. Also returns width and diagonal of game zone in degrees.
         :return: approximate centre of the map coordinates, width and height of game zone
         """
         # get length of shortest side and longest side of game zone
@@ -202,7 +283,7 @@ class GameZone(MapObject):
         l3 = self.distance_between(self.coordinates['c1'], self.coordinates['c4'])
         sorted_sides = sorted([l1, l2, l3])
         shortest_side = sorted_sides[0]
-        longest_side = sorted_sides[2]
+        diagonal = sorted_sides[2]
 
         # get coordinates of approximate centre of game zone
         all_latitudes = [self.coordinates['c1']['latitude'],
@@ -220,7 +301,7 @@ class GameZone(MapObject):
         longitude_distance = corner_2[1]-corner_1[1]
         centre = dict(latitude=corner_1[0] + latitude_distance / 2,
                       longitude=corner_1[1] + longitude_distance / 2)
-        return centre, shortest_side, longest_side
+        return centre, shortest_side, diagonal
 
     def game_zone_coordinates_to_float(self, game_zone_coordinates):
         """

@@ -1,0 +1,5 @@
+Resources:
+  CircleQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: CircleQueue-${opt:stage}

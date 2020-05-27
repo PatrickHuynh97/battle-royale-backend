@@ -3,7 +3,7 @@ import sys
 from unittest import mock
 from unittest.mock import MagicMock
 
-from enums import WebSocketEventType
+from enums import WebSocketEventType, WebSocketPushMessageType
 from exceptions import LobbyNotStartedException
 from handlers.websocket_handlers import connection_handler, authorize_connection_handler, \
     player_location_message_handler, gamemaster_message_handler
@@ -75,7 +75,8 @@ class TestWebsocketHandlers(TestWithMockAWSServices):
         self.assertIn(connection_id, unauthorized_connections)
 
         # authorize above user as a game master in happy flow
-        self.gamemaster_1.start_game(self.lobby.name)
+        with mock.patch("sqs.closing_circle_queue.CircleQueue.send_first_circle_event"):
+            self.gamemaster_1.start_game(self.lobby.name)
         event = self.create_fake_websocket_event(connection_id,
                                                  body={'access_token': '123456'})
         with mock.patch('jwt.verify_token', return_value={'username': self.gamemaster_1.username}):
@@ -111,7 +112,8 @@ class TestWebsocketHandlers(TestWithMockAWSServices):
         self.assertEqual(LobbyNotStartedException.error_code, res['statusCode'])
 
     def test_connection_handler_lobby_connect(self):
-        self.gamemaster_1.start_game(self.lobby.name)
+        with mock.patch("sqs.closing_circle_queue.CircleQueue.send_first_circle_event"):
+            self.gamemaster_1.start_game(self.lobby.name)
 
         # connect to the lobby as gamemaster
         gm_connection_id = '123456'
@@ -130,7 +132,8 @@ class TestWebsocketHandlers(TestWithMockAWSServices):
         self.assertEqual(200, res['statusCode'])
 
     def test_get_connections(self):
-        self.gamemaster_1.start_game(self.lobby.name)
+        with mock.patch("sqs.closing_circle_queue.CircleQueue.send_first_circle_event"):
+            self.gamemaster_1.start_game(self.lobby.name)
 
         connections = ConnectionManager().get_player_connections(self.lobby)
 
@@ -158,7 +161,8 @@ class TestWebsocketHandlers(TestWithMockAWSServices):
                 self.assertEqual(self.squad_2.name, connection['squad'])
 
     def test_get_test_player_and_gamemaster_connections(self):
-        self.gamemaster_1.start_game(self.lobby.name)
+        with mock.patch("sqs.closing_circle_queue.CircleQueue.send_first_circle_event"):
+            self.gamemaster_1.start_game(self.lobby.name)
 
         # connect two players and gamemaster_1 to the lobby
         p_1_connection_id = '123456'
@@ -196,7 +200,8 @@ class TestWebsocketHandlers(TestWithMockAWSServices):
         new_lobby = self.gamemaster_2.create_lobby('test-lobby-2', squad_size=2)
         self.gamemaster_2.add_squad_to_lobby(new_lobby.name, new_squad_1)
         self.gamemaster_2.add_squad_to_lobby(new_lobby.name, new_squad_2)
-        self.gamemaster_2.start_game(new_lobby.name)
+        with mock.patch("sqs.closing_circle_queue.CircleQueue.send_first_circle_event"):
+            self.gamemaster_2.start_game(new_lobby.name)
 
         # connect players in second lobby to websocket
         new_p_1_connection_id, new_p_2_connection_id, new_p_3_connection_id, new_gm_connection_id = \
@@ -237,7 +242,8 @@ class TestWebsocketHandlers(TestWithMockAWSServices):
         self.assertEqual(new_gm_connection_id, gm)
 
     def test_connection_handler_lobby_disconnect(self):
-        self.gamemaster_1.start_game(self.lobby.name)
+        with mock.patch("sqs.closing_circle_queue.CircleQueue.send_first_circle_event"):
+            self.gamemaster_1.start_game(self.lobby.name)
 
         # connect two players to the lobby
         p_1_connection_id = '123456'
@@ -263,7 +269,8 @@ class TestWebsocketHandlers(TestWithMockAWSServices):
 
     def test_location_websocket_message(self):
         # start lobby, connect two player who are in the same squad, one other player, and the game master
-        self.gamemaster_1.start_game(self.lobby.name)
+        with mock.patch("sqs.closing_circle_queue.CircleQueue.send_first_circle_event"):
+            self.gamemaster_1.start_game(self.lobby.name)
 
         p_1_connection_id = '123456'
         p_2_connection_id = '512512'
@@ -294,25 +301,28 @@ class TestWebsocketHandlers(TestWithMockAWSServices):
         player_location = dict(longitude=long, latitude=lat)
         location_event = self.create_fake_websocket_event(p_1_connection_id, body=player_location)
 
-        def mock_send(connection_id, data):
-            # assert that player_1's location data is sent to player_4, and the data is correct
-            if connection_id == p_4_connection_id:
-                self.assertEqual(self.p_1.username, data['name'])
-                self.assertEqual(long, data['longitude'])
-                self.assertEqual(lat, data['latitude'])
-            # player_1's location data should also be sent to the game master
-            elif connection_id == gm_connection_id:
-                pass
-            else:
-                self.fail()
+        def mock_send(connection_ids, data):
+            for connection_id in connection_ids:
+                # assert that player_1's location data is sent to player_4, and the data is correct
+                if connection_id == p_4_connection_id:
+                    self.assertEqual(WebSocketPushMessageType.PLAYER_LOCATION.value, data['event_type'])
+                    self.assertEqual(self.p_1.username, data['value']['name'])
+                    self.assertEqual(long, data['value']['longitude'])
+                    self.assertEqual(lat, data['value']['latitude'])
+                # player_1's location data should also be sent to the game master
+                elif connection_id == gm_connection_id:
+                    pass
+                else:
+                    self.fail()
 
-        with mock.patch('websockets.connection_manager.ConnectionManager.send_to_connection', side_effect=mock_send):
+        with mock.patch('websockets.connection_manager.ConnectionManager._send_to_connections', side_effect=mock_send):
             # player_1 pushes their location through websocket
             player_location_message_handler(location_event, None)
 
     def test_gamemaster_websocket_message(self):
         # start lobby, connect two player who are in the same squad, one other player, and the game master
-        self.gamemaster_1.start_game(self.lobby.name)
+        with mock.patch("sqs.closing_circle_queue.CircleQueue.send_first_circle_event"):
+            self.gamemaster_1.start_game(self.lobby.name)
 
         p_1_connection_id = '123456'
         p_2_connection_id = '512512'
@@ -338,15 +348,17 @@ class TestWebsocketHandlers(TestWithMockAWSServices):
             authorize_connection_handler(event_4, None)
 
         # push message to all players from the game master
-        message = {'message': dict(event='bounty-started')}
+        message = dict(event_type=WebSocketPushMessageType.GAME_MASTER_MESSAGE.value,
+                       value=dict(event='bounty-started'))
         event = self.create_fake_websocket_event(gm_connection_id, body=message)
 
-        def mock_send(connection_id, data):
+        def mock_send(connection_ids, data):
             # each connection id should be in the lobby, otherwise fail the test
-            if connection_id not in [p_1_connection_id, p_2_connection_id, p_4_connection_id]:
-                self.fail()
-            self.assertEqual(message['message'], data)
+            for connection_id in connection_ids:
+                if connection_id not in [p_1_connection_id, p_2_connection_id, p_4_connection_id]:
+                    self.fail()
+            self.assertEqual(message, data)
 
-        with mock.patch('websockets.connection_manager.ConnectionManager.send_to_connection', side_effect=mock_send):
+        with mock.patch('websockets.connection_manager.ConnectionManager._send_to_connections', side_effect=mock_send):
             # gamemaster pushes message to all players
             gamemaster_message_handler(event, None)

@@ -1,4 +1,5 @@
 import json
+from unittest import mock
 
 from exceptions import SquadInLobbyException, SquadTooBigException, LobbyFullException, \
     LobbyAlreadyStartedException, PlayerAlreadyInLobbyException
@@ -247,10 +248,6 @@ class TestGameMaster(TestWithMockAWSServices):
                                                     }
                                                 })
         update_lobby_handler(event, context)
-        self.game_master_1.update_lobby(lobby_name,
-                                        size=new_lobby_size,
-                                        squad_size=new_squad_size,
-                                        game_zone_coordinates=game_zone_coordinates)
 
         lobby = self.game_master_1.get_lobby()
         self.assertEqual(new_lobby_size, lobby.size)
@@ -265,8 +262,19 @@ class TestGameMaster(TestWithMockAWSServices):
         lobby.add_squad(self.squad_2)
         lobby.add_squad(self.squad_3)
 
+        game_zone_coordinates = dict(
+            c1=dict(latitude="56.132501", longitude="12.903200"),
+            c2=dict(latitude="56.132757", longitude="12.897164"),
+            c3=dict(latitude="56.130781", longitude="12.896993"),
+            c4=dict(latitude="56.130309", longitude="12.902884")
+        )
+
+        lobby = self.game_master_1.update_lobby(lobby_name,
+                                                game_zone_coordinates=game_zone_coordinates)
+
         # start game
-        self.game_master_1.start_game(lobby.name)
+        with mock.patch("sqs.closing_circle_queue.CircleQueue.send_first_circle_event"):
+            self.game_master_1.start_game(lobby.name)
 
         # get fresh lobby object, assert that game has been started and has a started_time
         fresh_lobby = self.game_master_1.get_lobby()
@@ -289,13 +297,15 @@ class TestGameMaster(TestWithMockAWSServices):
         self.game_master_1.add_squad_to_lobby(lobby_name, self.squad_3)
 
         # start and end game
-        self.game_master_1.start_game(lobby.name)
+        with mock.patch("sqs.closing_circle_queue.CircleQueue.send_first_circle_event"):
+            self.game_master_1.start_game(lobby.name)
         self.game_master_1.end_game(lobby.name)
 
         # assert that game is in finished state, and start it again
         lobby = self.game_master_1.get_lobby()
         self.assertEqual(LobbyState.FINISHED, lobby.state)
-        self.game_master_1.start_game(lobby.name)
+        with mock.patch("sqs.closing_circle_queue.CircleQueue.send_first_circle_event"):
+            self.game_master_1.start_game(lobby.name)
 
         lobby = self.game_master_1.get_lobby()
         self.assertEqual(LobbyState.STARTED, lobby.state)

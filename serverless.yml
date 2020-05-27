@@ -87,6 +87,7 @@ package:
     - 'models/*'
     - 'serverless_config/*'
     - 'websockets/*'
+    - 'sqs/*'
   exclude:
     - 'node_modules'
     - 'tests/*'
@@ -96,3 +97,4 @@ plugins:
 resources:
   - ${file(serverless_config/resources/dynamo-db.yml)}
   - ${file(serverless_config/resources/cognito-user-pool.yml)}
+  - ${file(serverless_config/resources/sqs.yml)}

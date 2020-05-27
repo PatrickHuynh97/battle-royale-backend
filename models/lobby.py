@@ -7,7 +7,7 @@ from exceptions import LobbyDoesNotExistException, SquadInLobbyException, SquadN
 from models import game_master
 from enums import LobbyState, PlayerState
 from models import squad as squad_model
-from models.map import Circle, GameZone
+from models import map
 from websockets import connection_manager
 import pytz
 
@@ -25,9 +25,6 @@ class Lobby:
         self.squad_size = None
         self.state = None
         self.game_zone = None
-        self.current_circle = None
-        self.next_circle = None
-        self.final_circle = None
         self.started_time = None
         self.squads = []
         self.table = DynamoDbConnector.get_table()
@@ -96,13 +93,13 @@ class Lobby:
         self.size = lobby.get('size')
         self.squad_size = lobby.get('squad-size')
         self.state = LobbyState(lobby.get('state'))
-        self.current_circle = Circle(lobby.get('current-circle')) if lobby.get('current-circle') else None
-        self.next_circle = Circle(lobby.get('next-circle')) if lobby.get('next-circle') else None
-        self.final_circle = Circle(lobby.get('final-circle')) if lobby.get('final-circle') else None
-        self.game_zone = GameZone(lobby.get('game-zone-coordinates'),
-                                  current_circle=self.current_circle,
-                                  next_circle=self.next_circle,
-                                  final_circle=self.final_circle)
+        current_circle = map.Circle(lobby.get('current-circle')) if lobby.get('current-circle') else None
+        next_circle = map.Circle(lobby.get('next-circle')) if lobby.get('next-circle') else None
+        final_circle = map.Circle(lobby.get('final-circle')) if lobby.get('final-circle') else None
+        self.game_zone = map.GameZone(lobby.get('game-zone-coordinates'),
+                                      current_circle=current_circle,
+                                      next_circle=next_circle,
+                                      final_circle=final_circle)
         self.started_time = datetime.strptime(lobby.get('started-time'), "%Y-%m-%dT%H:%M:%S.%f%z") \
             if lobby.get('started-time') else None
 
@@ -162,20 +159,30 @@ class Lobby:
             attributes_to_update['squad-size'] = dict(Value=squad_size)
             self.squad_size = squad_size
         if current_circle:
-            attributes_to_update['current-circle'] = dict(Value=Circle(current_circle).circle_to_string())
-            self.current_circle = Circle(current_circle)
+            if isinstance(current_circle, map.Circle):
+                attributes_to_update['current-circle'] = dict(Value=current_circle.to_string())
+            else:
+                attributes_to_update['current-circle'] = dict(Value=map.Circle(current_circle).to_string())
+                current_circle = map.Circle(current_circle)
         if next_circle:
-            attributes_to_update['next_circle'] = dict(Value=Circle(next_circle).circle_to_string())
-            self.next_circle = Circle(next_circle)
+            if isinstance(next_circle, map.Circle):
+                attributes_to_update['next-circle'] = dict(Value=next_circle.to_string())
+            else:
+                attributes_to_update['next-circle'] = dict(Value=map.Circle(next_circle).to_string())
+                next_circle = map.Circle(next_circle)
         if final_circle:
-            attributes_to_update['final-circle'] = dict(Value=Circle(final_circle).circle_to_string())
-            self.final_circle = Circle(final_circle)
+            if isinstance(final_circle, map.Circle):
+                attributes_to_update['final-circle'] = dict(Value=final_circle.to_string())
+            else:
+                attributes_to_update['final-circle'] = dict(Value=map.Circle(final_circle).to_string())
+                final_circle = map.Circle(final_circle)
         if game_zone_coordinates:
-            attributes_to_update['game-zone-coordinates'] = dict(Value=GameZone(game_zone_coordinates).dump_game_zone_coordinates())
-            self.game_zone = GameZone(game_zone_coordinates,
-                                      current_circle=self.current_circle,
-                                      next_circle=self.next_circle,
-                                      final_circle=self.final_circle)
+            attributes_to_update['game-zone-coordinates'] = dict(
+                Value=map.GameZone(game_zone_coordinates).dump_game_zone_coordinates())
+            self.game_zone = map.GameZone(game_zone_coordinates,
+                                          current_circle=current_circle,
+                                          next_circle=next_circle,
+                                          final_circle=final_circle)
         if attributes_to_update:
             self.table.update_item(
                 Key={
@@ -262,9 +269,9 @@ class Lobby:
 
         # squad is not in lobby so we can add them in, and create attributes for each member
         item = {
-                'pk': 'LOBBY',
-                'sk': f'SQUAD#{squad.name}'
-            }
+            'pk': 'LOBBY',
+            'sk': f'SQUAD#{squad.name}'
+        }
 
         # add attribute for each player in squad
         for member in squad.members:
@@ -380,7 +387,7 @@ class Lobby:
             AttributeUpdates={f'PLAYER#{player.username}': dict(Value=PlayerState.DEAD.value)})
 
         # notify the game master that Player is dead through game session
-        connection_manager.ConnectionManager().notify_player_dead(player)
+        connection_manager.ConnectionManager().push_player_dead(player)
 
     def set_player_alive(self, player):
         """
@@ -402,18 +409,27 @@ class Lobby:
             },
             AttributeUpdates={f'PLAYER#{player.username}': dict(Value=PlayerState.ALIVE.value)})
 
-    def generate_next_circle(self):
+    def generate_first_circle(self):
         """
-        Called directly after the current circle has finished closing, or if no circle exists
+        Called when the first circle is being generated
         :return: None
         """
-        # generate the next circle given the current circle (or lack thereof)
+        # generate the next circle
         self.game_zone.create_next_circle()
-        self.next_circle = self.game_zone.next_circle
+        self.update(next_circle=self.game_zone.next_circle)
 
     def close_current_circle(self):
         """
-        Begins the closing of the current circle (if it exist) to become the next_circle
+        Facilitates the closing of the current circle (if it exist) to become the next_circle. This is run on a lambda
+        that has a long timeout set and runs continuously until the outer circle has become the inner circle. Once
+        the circle has finished closing, the next circle will be generated automatically, and a CircleQueue SQS
+        event queued to close the next circle when necessary
         :return: None
         """
-        self.game_zone.close_current_circle()
+        self.get()
+        self.game_zone.close_to_next_circle(self)
+
+        # once circle has finished closing, current_circle becomes next_circle, and new next_circle is created
+        self.game_zone.create_next_circle()
+        self.update(current_circle=self.game_zone.current_circle,
+                    next_circle=self.game_zone.next_circle)
