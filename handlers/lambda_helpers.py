@@ -2,6 +2,8 @@ import json
 from functools import wraps
 from json import JSONDecodeError
 
+from marshmallow import ValidationError
+
 from exceptions import ApiException
 
 
@@ -38,12 +40,18 @@ def endpoint(response_schema=None, request_schema=None):
 
 
 def postload_body(body, response_schema=None):
-    # try to load body in schema if given, otherwise try to dump it into as string. If this fails, raise an error
+    # Python Lambda Handler's automatically convert the output to JSON, so here we just validate it before returning
+    # a dictionary
     if response_schema:
-        return response_schema().dumps(body)
+        try:
+            response_schema().load(body)
+            return body
+        except ValidationError as e:
+            raise ApiException("Response does not match specific response_schema", extras=e)
     else:
         try:
-            return json.dumps(body)
+            json.dumps(body)
+            return body
         except Exception as e:
             raise ApiException("Response is not a valid JSON", extras=e)
 

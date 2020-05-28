@@ -58,7 +58,7 @@ class TestGameMaster(TestWithMockAWSServices):
         # get new lobby
         event, context = make_api_gateway_event(body={'name': lobby_name}, calling_user=self.game_master_1)
         res = get_lobby_handler(event, context)
-        body = json.loads(res['body'])
+        body = res['body']
 
         self.assertEqual(self.game_master_1.username, body['owner'])
         self.assertEqual(lobby_size, body['size'])
@@ -77,7 +77,7 @@ class TestGameMaster(TestWithMockAWSServices):
         event, context = make_api_gateway_event(calling_user=self.game_master_1,
                                                 body={'name': lobby_name})
         res = game_master_handlers.get_lobby_handler(event, context)
-        load = LobbySchema().loads(res['body'])
+        load = LobbySchema().load(res['body'])
 
         self.assertEqual(lobby_name, load['name'])
         self.assertEqual(LobbyState.NOT_STARTED.value, load['state']),
@@ -326,7 +326,7 @@ class TestGameMaster(TestWithMockAWSServices):
         event, context = make_api_gateway_event(calling_user=self.game_master_1,
                                                 path_params={'lobby': lobby_name})
         res = game_master_handlers.get_players_in_lobby_handler(event, context)
-        players = LobbyPlayerListSchema().loads(res['body'])['players']
+        players = LobbyPlayerListSchema().load(res['body'])['players']
         self.assertTrue(6, len(players))
 
         player = Player(players[0]['name'])

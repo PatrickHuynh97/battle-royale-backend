@@ -60,7 +60,7 @@ class TestGameZone(unittest.TestCase):
         expected_centre = dict(latitude=56.131533, longitude=12.9000965)
 
         game_zone = GameZone(
-            game_zone_coordinates=self.game_zone_coordinates,
+            coordinates=self.game_zone_coordinates,
             final_circle=self.final_circle
         )
 
@@ -70,7 +70,7 @@ class TestGameZone(unittest.TestCase):
     def test_generate_next_circle_no_final_circle(self):
         # test create GameZone with no current_circle, and generating a first circle (becomes next_circle)
         game_zone = GameZone(
-            game_zone_coordinates=self.game_zone_coordinates,
+            coordinates=self.game_zone_coordinates,
         )
 
         # generate next circle
@@ -94,7 +94,7 @@ class TestGameZone(unittest.TestCase):
     def test_generate_next_circle_with_final_circle(self):
         # test create GameZone with a final_circle, and generating two further circles
         game_zone = GameZone(
-            game_zone_coordinates=self.game_zone_coordinates,
+            coordinates=self.game_zone_coordinates,
             final_circle=self.final_circle
         )
 
@@ -137,7 +137,7 @@ class TestGameZone(unittest.TestCase):
     def test_generate_next_circle_until_final_circle(self):
         # create GameZone with a desired final_circle and generating circles until the final circle is used
         game_zone = GameZone(
-            game_zone_coordinates=self.game_zone_coordinates,
+            coordinates=self.game_zone_coordinates,
             final_circle=self.final_circle
         )
 

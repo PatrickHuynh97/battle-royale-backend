@@ -110,11 +110,11 @@ class Circle(MapObject):
 class GameZone(MapObject):
     # class representing the entire playable area and the circles within it.
     def __init__(self,
-                 game_zone_coordinates=None,
+                 coordinates=None,
                  current_circle: Circle = None,
                  next_circle: Circle = None,
                  final_circle: Circle = None):
-        self.coordinates = self.game_zone_coordinates_to_float(game_zone_coordinates)
+        self.coordinates = self.game_zone_coordinates_to_float(coordinates)
         self.current_circle = current_circle
         self.next_circle = next_circle
         self.final_circle = final_circle
