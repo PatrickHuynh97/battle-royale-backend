@@ -45,7 +45,7 @@ class User:
                 Username=username
             )
             if res['ResponseMetadata']['HTTPStatusCode'] == 200:
-                return {'message': 'Sign-up successful'}
+                return
             else:
                 raise SignUpException("Cognito sign in failed")
         except self.cognito_client.exceptions.InvalidPasswordException:
@@ -96,7 +96,7 @@ class User:
         )
 
         if res['ResponseMetadata']['HTTPStatusCode'] == 200:
-            return {'message': 'Sign-out successful'}
+            return
         else:
             raise SignOutException('Failed to sign out')
 

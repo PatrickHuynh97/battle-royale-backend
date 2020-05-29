@@ -27,8 +27,6 @@ def sign_up_handler(event, context):
 
     player.Player(username).put()
 
-    return json.dumps(res)
-
 
 @endpoint()
 def sign_in_handler(event, context):
@@ -39,7 +37,7 @@ def sign_in_handler(event, context):
 
     result = User().sign_in(username=body['username'], password=body['password'])
 
-    return json.dumps(result)
+    return result
 
 
 @endpoint()
@@ -48,9 +46,7 @@ def sign_out_handler(event, context):
     Handler for signing out a user
     """
 
-    result = User().sign_out(access_token=event['body']['access_token'])
-
-    return json.dumps(result)
+    User().sign_out(access_token=event['body']['access_token'])
 
 
 @endpoint()
@@ -61,7 +57,7 @@ def refresh_tokens_handler(event, context):
 
     result = User().refresh_tokens(refresh_token=event['body']['refresh_token'])
 
-    return json.dumps(result)
+    return result
 
 
 @endpoint()
