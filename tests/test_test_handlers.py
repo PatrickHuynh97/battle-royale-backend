@@ -16,7 +16,7 @@ class TestTestHandlers(TestWithMockAWSServices):
     def test_create_test_players_and_squads_handler(self):
         event, context = make_api_gateway_event(calling_user=self.player_1)
         res = create_test_players_and_squads_handler(event, context)
-        squads = SquadListSchema().load(res['body'])['squads']
+        squads = SquadListSchema().loads(res['body'])['squads']
         self.assertEqual(3, len(squads))
         for squad in squads:
             self.assertEqual(3, len(squad['members']))

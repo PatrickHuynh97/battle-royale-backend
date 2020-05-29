@@ -31,27 +31,26 @@ def endpoint(response_schema=None, request_schema=None):
             except Exception as e:
                 raise e
 
-            return {
+            to_return = {
                 'statusCode': 200,
                 'body': postload_body(result, response_schema)
             }
+            print(to_return)
+            return to_return
         return wrapper
     return lambda_wrapper
 
 
 def postload_body(body, response_schema=None):
-    # Python Lambda Handler's automatically convert the output to JSON, so here we just validate it before returning
-    # a dictionary
+    # dump the body to a JSON string
     if response_schema:
         try:
-            response_schema().load(body)
-            return body
+            return response_schema().dumps(body)
         except ValidationError as e:
             raise ApiException("Response does not match specific response_schema", extras=e)
     else:
         try:
-            json.dumps(body)
-            return body
+            return json.dumps(body)
         except Exception as e:
             raise ApiException("Response is not a valid JSON", extras=e)
 

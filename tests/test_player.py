@@ -250,7 +250,7 @@ class TestPlayer(TestWithMockAWSServices):
         # go through handler to create duplicate
         event, context = make_api_gateway_event(calling_user=self.player_1, body={'username': self.player_1.username})
         res = get_owned_squads_handler(event, context)
-        body = res['body']
+        body = json.loads(res['body'])
 
         self.assertEqual(1, len(body['squads']))
         self.assertEqual(squad_1.name, body['squads'][0]['name'])
@@ -272,7 +272,7 @@ class TestPlayer(TestWithMockAWSServices):
 
         event, context = make_api_gateway_event(calling_user=self.player_1)
         retrieved_lobby = get_current_lobby_handler(event, context)
-        data = LobbySchema().load(retrieved_lobby['body'])
+        data = LobbySchema().loads(retrieved_lobby['body'])
         self.assertEqual(lobby.name, data['name'])
 
     def test_get_current_state(self):

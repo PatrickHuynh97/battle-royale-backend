@@ -21,9 +21,9 @@ def sign_up_handler(event, context):
     if player.Player(username).exists():
         raise UserAlreadyExistsException(f'User with username {username} already exists')
 
-    res = User().sign_up(username=username,
-                         password=body['password'],
-                         email=body['email'])
+    User().sign_up(username=username,
+                   password=body['password'],
+                   email=body['email'])
 
     player.Player(username).put()
 
@@ -34,9 +34,7 @@ def sign_in_handler(event, context):
     Handler for signing in a user
     """
     body = event['body']
-
     result = User().sign_in(username=body['username'], password=body['password'])
-
     return result
 
 
