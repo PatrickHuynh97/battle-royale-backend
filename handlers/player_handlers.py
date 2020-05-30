@@ -65,8 +65,7 @@ def get_owned_squads_handler(event, context):
         'squads': [
             dict(name=squad.name,
                  owner=squad.owner.username,
-                 members=[dict(username=member.username) for member in squad.members])
-        ] for squad in squads
+                 members=[dict(username=member.username) for member in squad.members]) for squad in squads]
     }
 
 
@@ -83,8 +82,7 @@ def get_not_owned_squads_handler(event, context):
         'squads': [
             dict(name=squad.name,
                  owner=squad.owner.username,
-                 members=[dict(username=member.username) for member in squad.members])
-        ] for squad in squads
+                 members=[dict(username=member.username) for member in squad.members]) for squad in squads]
     }
 
 

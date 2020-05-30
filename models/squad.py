@@ -1,7 +1,8 @@
 from boto3.dynamodb.conditions import Key
 
 from db.dynamodb_connector import DynamoDbConnector
-from exceptions import SquadDoesNotExistException, SquadAlreadyExistsException, UserAlreadyMemberException
+from exceptions import SquadDoesNotExistException, SquadAlreadyExistsException, UserAlreadyMemberException, \
+    UserCouldNotBeRemovedException
 from models import player
 from models import lobby as lobby_model
 
@@ -146,7 +147,8 @@ class Squad:
                 'sk': f'SQUAD#{self.name}#MEMBER#{member_to_remove.username}',
             }
         )
-        self.members.remove(member_to_remove)
+        if res['ResponseMetadata']['HTTPStatusCode'] != 200:
+            raise UserCouldNotBeRemovedException("Failed to delete player")
 
     def leave_lobby(self):
         """

@@ -87,10 +87,6 @@ refreshTokens:
     - http:
         path: /user-management/refresh
         method: post
-        authorizer:
-          type: COGNITO_USER_POOLS
-          authorizerId:
-            Ref: ApiGatewayAuthorizer
         documentation:
           summary: "Refreshes a User's tokens"
           tags:

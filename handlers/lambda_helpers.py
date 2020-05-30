@@ -63,15 +63,16 @@ def set_calling_user(event):
 
 
 def preload_body(event, schema):
-    # if a schema is given, try to load the request with that
-    if schema:
-        event['body'] = schema().loads(event['body'])
-    # otherwise try to load body into JSON. If it fails, do nothing.
-    else:
-        try:
-            event['body'] = json.loads(event['body'])
-        except JSONDecodeError:
-            pass
+    if event['body']:
+        # if a schema is given, try to load the request with that
+        if schema:
+            event['body'] = schema().loads(event['body'])
+        # otherwise try to load body into JSON. If it fails, do nothing.
+        else:
+            try:
+                event['body'] = json.loads(event['body'])
+            except JSONDecodeError:
+                pass
 
 
 def handle_api_exception(exception):

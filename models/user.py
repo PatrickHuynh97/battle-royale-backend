@@ -116,9 +116,12 @@ class User:
                 }
             )
             if res['ResponseMetadata']['HTTPStatusCode'] == 200:
-                return {'id_token': res["AuthenticationResult"]['IdToken'],
-                        'access_token': res["AuthenticationResult"]['AccessToken'],
-                        'refresh_token': res['AuthenticationResult']['RefreshToken']}
+                new_tokens = {'id_token': res["AuthenticationResult"]['IdToken'],
+                              'access_token': res["AuthenticationResult"]['AccessToken']}
+                refresh_token = res["AuthenticationResult"].get('RefreshToken')
+                if refresh_token:
+                    new_tokens['refresh_token'] = refresh_token
+                return new_tokens
             else:
                 raise SignInException(message="Cognito sign in failed")
         except ClientError:

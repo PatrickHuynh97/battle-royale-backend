@@ -1,5 +1,6 @@
 import json
 import os
+
 import botocore
 from unittest import mock
 from exceptions import UserAlreadyExistsException, SquadAlreadyExistsException, PlayerOwnsSquadException, \
@@ -13,7 +14,6 @@ from models.player import Player
 from models.squad import Squad
 from tests.helper_functions import make_api_gateway_event, create_test_players
 from tests.mock_db import TestWithMockAWSServices
-
 os.environ['local_test'] = "True"  # must be set to prevent jwt file http GET from being called in 'handlers' import
 from handlers import account_handlers
 
@@ -77,6 +77,37 @@ class TestPlayer(TestWithMockAWSServices):
             player.delete('dummy_token')
         self.assertFalse(player.exists())
 
+    def test_delete_player_with_squads(self):
+        username = "test-user"
+        player_1 = Player(username)
+        player_1.put()
+
+        player_2 = Player("player_2")
+        player_2.put()
+
+        # create squad and add player_2 in
+        squad = player_1.create_squad('squad_one')
+        player_1.add_member_to_squad(squad, player_2)
+
+        self.assertTrue(len(player_1.get_owned_squads()) == 1)
+        self.assertTrue(len(player_2.get_not_owned_squads()) == 1)
+
+        orig = botocore.client.BaseClient._make_api_call
+
+        # mock calls to cognito identify provider whilst allowing calls to DynamoDB
+        def mock_make_api_call(self, operation_name, kwarg):
+            if operation_name == 'Query' or operation_name == 'DeleteItem' or operation_name == 'GetItem':
+                return orig(self, operation_name, kwarg)
+            else:
+                pass
+
+        with mock.patch('botocore.client.BaseClient._make_api_call', new=mock_make_api_call):
+            player_1.delete('dummy_token')
+
+        # assert that player_1 was deleted and the squad they owned disbanded
+        self.assertFalse(player_1.exists())
+        self.assertTrue(len(player_2.get_not_owned_squads()) == 0)
+
     def test_create_squad(self):
         squad_name_1 = 'test-squad-1'
         squad_name_2 = 'test-squad-2'
@@ -98,6 +129,7 @@ class TestPlayer(TestWithMockAWSServices):
 
         # create a squad
         squad_1 = self.player_1.create_squad(squad_name_1)
+        self.player_1.add_member_to_squad(squad_1, self.player_2)
         self.player_1.delete_squad(squad_1)
 
         self.assertFalse(squad_1.exists())
@@ -185,12 +217,6 @@ class TestPlayer(TestWithMockAWSServices):
         self.player_1.add_member_to_squad(squad_1, self.player_2)
         self.player_1.add_member_to_squad(squad_1, self.player_3)
         self.assertEqual(3, len(squad_1.members))
-
-        # delete player_3 from squad, assert that player_3 was removed and other players were not touched
-        self.player_1.remove_member_from_squad(squad_1, self.player_3)
-        self.assertIn(self.player_1, squad_1.members)
-        self.assertIn(self.player_2, squad_1.members)
-        self.assertNotIn(self.player_3, squad_1.members)
 
     def test_leave_squad(self):
         # player_1 creates squad, adds player_2 and player_3

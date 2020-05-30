@@ -39,18 +39,26 @@ class SignUpException(AuthorizationException):
 
 
 class SignInException(AuthorizationException):
+    tag = __qualname__
     error_code = 400
 
 
 class SignOutException(AuthorizationException):
+    tag = __qualname__
     error_code = 400
 
 
 class UserDoesNotExistException(AuthorizationException):
+    tag = __qualname__
     error_code = 400
 
 
 class UserAlreadyExistsException(AuthorizationException):
+    tag = __qualname__
+    error_code = 400
+
+
+class PasswordLengthException(AuthorizationException):
     tag = __qualname__
     error_code = 400
 
@@ -98,6 +106,11 @@ class SquadDoesNotExistException(SquadException):
 
 
 class UserAlreadyMemberException(SquadException):
+    tag = __qualname__
+    error_code = 400
+
+
+class UserCouldNotBeRemovedException(SquadException):
     tag = __qualname__
     error_code = 400
 

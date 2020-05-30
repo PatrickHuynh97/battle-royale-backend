@@ -1,8 +1,8 @@
-import json
+import os
 
 from handlers.lambda_helpers import endpoint
 from models import player
-from exceptions import UserAlreadyExistsException
+from exceptions import UserAlreadyExistsException, PasswordLengthException
 from models.user import User
 from exceptions import PlayerCannotBeDeletedException
 from models.player import Player
@@ -20,6 +20,10 @@ def sign_up_handler(event, context):
     # ensure username is not already in use
     if player.Player(username).exists():
         raise UserAlreadyExistsException(f'User with username {username} already exists')
+
+    password = body['password']
+    if len(password) < 6:
+        raise PasswordLengthException(f'Password must be at least 6 characters long')
 
     User().sign_up(username=username,
                    password=body['password'],
@@ -64,9 +68,7 @@ def delete_user_handler(event, context):
     Handler for deleting a user. Username and ID token must be provided.
     """
 
-    body = json.loads(event['body'])
-
-    access_token = body['access_token']
+    access_token = event['body']['access_token']
 
     # check that access token is valid, and matches that of user to be deleted
     claims = verify_token(access_token)

@@ -12,7 +12,7 @@ class SquadSchema(Schema):
 
 
 class SquadListSchema(Schema):
-    squads = fields.Nested(SquadSchema, many=True)
+    squads = fields.Nested(SquadSchema, many=True, allow_none=True)
 
 
 class CoordinateSchema(Schema):
