@@ -143,7 +143,7 @@ class TestPlayer(TestWithMockAWSServices):
         squad_name_2 = 'test-squad-2'
 
         # create a squad
-        event, context = make_api_gateway_event(body={'name': squad_name_1}, calling_user=self.player_1)
+        event, context = make_api_gateway_event(path_params={'squadname': squad_name_1}, calling_user=self.player_1)
         res = player_handlers.create_squad_handler(event, context)
         self.assertEqual(200, res['statusCode'])
 
@@ -154,7 +154,7 @@ class TestPlayer(TestWithMockAWSServices):
 
         # create another squad
         # create a squad
-        event, context = make_api_gateway_event(body={'name': squad_name_2}, calling_user=self.player_1)
+        event, context = make_api_gateway_event(path_params={'squadname': squad_name_2}, calling_user=self.player_1)
         res = player_handlers.create_squad_handler(event, context)
         self.assertEqual(200, res['statusCode'])
         squad_2 = Squad(squad_name_2)

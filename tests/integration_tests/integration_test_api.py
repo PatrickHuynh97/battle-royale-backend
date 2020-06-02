@@ -80,9 +80,8 @@ def test_user_management(username, password):
 
 
 def create_squad(id_token, squad_name):
-    url = BASE_URL + '/player/squads'
-    res = requests.post(url, headers=dict(Authorization=id_token),
-                        data=json.dumps({"name": squad_name}))
+    url = BASE_URL + '/player/squads/' + squad_name
+    res = requests.post(url, headers=dict(Authorization=id_token))
     if res.status_code == 200:
         return json.loads(res.text)
     elif res.status_code == 400:
@@ -103,10 +102,8 @@ def delete_squad(id_token, squad_name):
 
 
 def add_member_to_squad(id_token, squad_name, username):
-    body = dict(username=username)
-    url = BASE_URL + f'/player/squads/{squad_name}/member'
-    res = requests.post(url, headers=dict(Authorization=id_token),
-                        data=json.dumps(body))
+    url = BASE_URL + f'/player/squads/{squad_name}/member/{username}'
+    res = requests.post(url, headers=dict(Authorization=id_token))
     if res.status_code == 200:
         return json.loads(res.text)
     elif res.status_code == 400:
@@ -205,6 +202,6 @@ if __name__ == "__main__":
     username = "integration-test-user-1"
     password = "poo123456"
 
-    test_user_management(username, password)
+    #test_user_management(username, password)
 
     test_player_squad(username, password)

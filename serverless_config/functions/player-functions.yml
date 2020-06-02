@@ -2,20 +2,20 @@ createSquad:
   handler: handlers.player_handlers.create_squad_handler
   events:
     - http:
-        path: /player/squads
+        path: /player/squads/{squadname}
+        request:
+          parameters:
+            paths:
+              squadname: true
         method: post
         authorizer:
           type: COGNITO_USER_POOLS
           authorizerId:
             Ref: ApiGatewayAuthorizer
         documentation:
-          summary: "Create a squad owned by calling user"
+          summary: "Create a squad."
           tags:
             - "Player Endpoints"
-          requestBody:
-            description: "JSON containing name of squad to be created"
-          requestModels:
-            "application/json": PlayerSquadRequest
           methodResponses:
             - statusCode: "200"
               responseBody:
@@ -47,8 +47,6 @@ deleteSquad:
           summary: "Delete a squad owned by calling user"
           tags:
             - "Player Endpoints"
-          requestBody:
-            description: "None"
           methodResponses:
             - statusCode: "200"
               responseBody:
@@ -114,8 +112,6 @@ addUserToSquad:
           summary: "Add a Player to a squad owned by calling user"
           tags:
             - "Player Endpoints"
-          requestBody:
-            description: "None"
           methodResponses:
             - statusCode: "200"
               responseBody:
@@ -148,8 +144,6 @@ removeMemberFromSquad:
           summary: "Remove a Player from a squad owned by calling user"
           tags:
             - "Player Endpoints"
-          requestBody:
-            description: "None"
           methodResponses:
             - statusCode: "200"
               responseBody:

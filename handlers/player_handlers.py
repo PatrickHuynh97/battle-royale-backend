@@ -10,7 +10,7 @@ def create_squad_handler(event, context):
     from models.player import Player
 
     username = event['calling_user']
-    squad_name = event['body']['name']
+    squad_name = event['pathParameters']['squadname']
 
     Player(username).create_squad(squad_name=squad_name)
 
