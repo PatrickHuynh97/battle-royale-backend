@@ -35,7 +35,6 @@ def endpoint(response_schema=None, request_schema=None):
                 'statusCode': 200,
                 'body': postload_body(result, response_schema)
             }
-            print(to_return)
             return to_return
         return wrapper
     return lambda_wrapper
@@ -45,7 +44,10 @@ def postload_body(body, response_schema=None):
     # dump the body to a JSON string
     if response_schema:
         try:
-            return response_schema().dumps(body)
+            if isinstance(body, dict):
+                return response_schema().dumps(body)
+            elif isinstance(body, list):
+                return response_schema().dumps(body, many=True)
         except ValidationError as e:
             raise ApiException("Response does not match specific response_schema", extras=e)
     else:

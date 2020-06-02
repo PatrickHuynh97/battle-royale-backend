@@ -4,18 +4,18 @@ import os
 import botocore
 from unittest import mock
 from exceptions import UserAlreadyExistsException, SquadAlreadyExistsException, PlayerOwnsSquadException, \
-    PlayerDoesNotOwnSquadException, UserAlreadyMemberException, LobbyNotStartedException
+    PlayerDoesNotOwnSquadException, UserAlreadyMemberException, LobbyNotStartedException, SquadDoesNotExistException
 from handlers.player_handlers import get_owned_squads_handler, set_dead_handler, set_alive_handler, \
     get_current_lobby_handler
-from handlers.schemas import LobbySchema
+from handlers.schemas import LobbySchema, SquadSchema
 from enums import PlayerState
 from models.game_master import GameMaster
-from models.player import Player
+from models import player as player_model
 from models.squad import Squad
 from tests.helper_functions import make_api_gateway_event, create_test_players
 from tests.mock_db import TestWithMockAWSServices
 os.environ['local_test'] = "True"  # must be set to prevent jwt file http GET from being called in 'handlers' import
-from handlers import account_handlers
+from handlers import account_handlers, player_handlers
 
 
 class TestPlayer(TestWithMockAWSServices):
@@ -27,7 +27,7 @@ class TestPlayer(TestWithMockAWSServices):
     def test_create_player(self):
         # test creating a single player
         username = "test-user"
-        player = Player(username)
+        player = player_model.Player(username)
         player.put()
 
         player.get()
@@ -36,7 +36,7 @@ class TestPlayer(TestWithMockAWSServices):
     def test_create_duplicate_player(self):
         # test trying to create two players with same usernams
         username = "test-user"
-        player = Player(username)
+        player = player_model.Player(username)
         player.put()
 
         self.assertTrue(player.exists())
@@ -52,14 +52,14 @@ class TestPlayer(TestWithMockAWSServices):
 
     def test_player_exists(self):
         username = "test-user"
-        player = Player(username)
+        player = player_model.Player(username)
         player.put()
 
         self.assertTrue(player.exists())
 
     def test_delete_player(self):
         username = "test-user"
-        player = Player(username)
+        player = player_model.Player(username)
         player.put()
 
         self.assertTrue(player.exists())
@@ -79,18 +79,41 @@ class TestPlayer(TestWithMockAWSServices):
 
     def test_delete_player_with_squads(self):
         username = "test-user"
-        player_1 = Player(username)
+        player_1 = player_model.Player(username)
         player_1.put()
 
-        player_2 = Player("player_2")
+        player_2 = player_model.Player("player_2")
         player_2.put()
 
+        squad_1_name = 'squad_one'
         # create squad and add player_2 in
-        squad = player_1.create_squad('squad_one')
+        squad = player_1.create_squad(squad_1_name)
         player_1.add_member_to_squad(squad, player_2)
 
-        self.assertTrue(len(player_1.get_owned_squads()) == 1)
-        self.assertTrue(len(player_2.get_not_owned_squads()) == 1)
+        squad2 = player_2.create_squad('squad_two')
+        player_2.add_member_to_squad(squad2, player_1)
+
+        player_1_owned_squads = player_1.get_owned_squads()
+        player_2_owned_squads = player_2.get_owned_squads()
+
+        player_1_not_owned_squads = player_1.get_not_owned_squads()
+        player_2_not_owned_squads = player_2.get_not_owned_squads()
+
+        self.assertTrue(len(player_1_owned_squads) == 1)
+        self.assertTrue(len(player_2_owned_squads) == 1)
+        self.assertTrue(player_1_owned_squads[0] != player_2_owned_squads[0])
+
+        self.assertTrue(len(player_1_not_owned_squads) == 1)
+        self.assertTrue(len(player_2_not_owned_squads) == 1)
+        self.assertTrue(player_1_not_owned_squads[0] != player_2_not_owned_squads[0])
+
+        self.assertTrue(len(player_1_owned_squads[0].members) == 2)
+        self.assertTrue(len(player_1_not_owned_squads[0].members) == 2)
+        self.assertTrue(len(player_2_owned_squads[0].members) == 2)
+        self.assertTrue(len(player_2_not_owned_squads[0].members) == 2)
+
+        self.assertTrue(player_1 in player_2_owned_squads[0].members)
+        self.assertTrue(player_2 in player_1_owned_squads[0].members)
 
         orig = botocore.client.BaseClient._make_api_call
 
@@ -107,32 +130,77 @@ class TestPlayer(TestWithMockAWSServices):
         # assert that player_1 was deleted and the squad they owned disbanded
         self.assertFalse(player_1.exists())
         self.assertTrue(len(player_2.get_not_owned_squads()) == 0)
+        with self.assertRaises(SquadDoesNotExistException):
+            Squad(squad_1_name).get()
+        player_2_owned_squads = player_2.get_owned_squads()
+
+        self.assertTrue(len(player_2_owned_squads) == 1)
+        self.assertTrue(len(player_2_owned_squads[0].members) == 1)
+        self.assertTrue(player_2_owned_squads[0].members[0] == player_2)
 
     def test_create_squad(self):
         squad_name_1 = 'test-squad-1'
         squad_name_2 = 'test-squad-2'
 
         # create a squad
-        squad_1 = self.player_1.create_squad(squad_name_1)
+        event, context = make_api_gateway_event(body={'name': squad_name_1}, calling_user=self.player_1)
+        res = player_handlers.create_squad_handler(event, context)
+        self.assertEqual(200, res['statusCode'])
+
+        squad_1 = Squad(squad_name_1)
         squad_1.get()
         self.assertEqual(self.player_1.username, squad_1.owner.username)
         self.assertEqual(squad_name_1, squad_1.name)
 
         # create another squad
-        squad_2 = self.player_1.create_squad(squad_name_2)
+        # create a squad
+        event, context = make_api_gateway_event(body={'name': squad_name_2}, calling_user=self.player_1)
+        res = player_handlers.create_squad_handler(event, context)
+        self.assertEqual(200, res['statusCode'])
+        squad_2 = Squad(squad_name_2)
         squad_2.get()
         self.assertEqual(self.player_1.username, squad_2.owner.username)
         self.assertEqual(squad_name_2, squad_2.name)
 
     def test_delete_squad(self):
         squad_name_1 = 'test-squad-1'
+        squad_name_2 = 'test-squad-2'
 
         # create a squad
         squad_1 = self.player_1.create_squad(squad_name_1)
-        self.player_1.add_member_to_squad(squad_1, self.player_2)
+        squad_2 = self.player_1.create_squad(squad_name_2)
+
+        event, context = make_api_gateway_event(body={'username': self.player_2.username},
+                                                calling_user=self.player_1,
+                                                path_params=dict(squadname=squad_1.name))
+        player_handlers.add_user_to_squad_handler(event, context)
+
+        event, context = make_api_gateway_event(body={'username': self.player_3.username},
+                                                calling_user=self.player_1,
+                                                path_params=dict(squadname=squad_2.name))
+        player_handlers.add_user_to_squad_handler(event, context)
+
         self.player_1.delete_squad(squad_1)
 
         self.assertFalse(squad_1.exists())
+        self.assertTrue(squad_2.exists())
+
+    def test_get_squad(self):
+        squad_name_1 = 'test-squad-1'
+
+        # create a squad
+        squad_1 = self.player_1.create_squad(squad_name_1)
+
+        event, context = make_api_gateway_event(body={'username': self.player_2.username},
+                                                calling_user=self.player_1,
+                                                path_params=dict(squadname=squad_1.name))
+        player_handlers.add_user_to_squad_handler(event, context)
+
+        event, context = make_api_gateway_event(calling_user=self.player_1,
+                                                path_params=dict(squadname=squad_1.name))
+        res = player_handlers.get_squad_handler(event, context)
+        body = SquadSchema().loads(res['body'])
+        self.assertTrue(len(body['members']) == 2)
 
     def test_delete_squad_not_owner(self):
         squad_name_1 = 'test-squad-1'
@@ -260,10 +328,13 @@ class TestPlayer(TestWithMockAWSServices):
         self.assertIn(self.player_2, squad.members)
         self.assertNotEqual(squad.owner, self.player_2)
 
-        squads_player_2_is_in = self.player_2.get_not_owned_squads()
+        event, context = make_api_gateway_event(calling_user=self.player_2)
+        res = player_handlers.get_not_owned_squads_handler(event, context)
+        squads_player_2_is_in = json.loads(res['body'])
 
         self.assertEqual(1, len(squads_player_2_is_in))
-        self.assertEqual(squad, squads_player_2_is_in[0])
+        self.assertEqual(squad.name, squads_player_2_is_in[0]['name'])
+        self.assertEqual(squad.owner.username, squads_player_2_is_in[0]['owner'])
 
     def test_get_owned_squad(self):
         # create squad, add two more members, assert that squad now has 2 members in it
@@ -278,9 +349,9 @@ class TestPlayer(TestWithMockAWSServices):
         res = get_owned_squads_handler(event, context)
         body = json.loads(res['body'])
 
-        self.assertEqual(1, len(body['squads']))
-        self.assertEqual(squad_1.name, body['squads'][0]['name'])
-        self.assertEqual(3, len(body['squads'][0]['members']))
+        self.assertEqual(1, len(body))
+        self.assertEqual(squad_1.name, body[0]['name'])
+        self.assertEqual(3, len(body[0]['members']))
 
     def test_get_current_lobby_handler(self):
         # create squad, and add to lobby

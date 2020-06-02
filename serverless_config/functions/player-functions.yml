@@ -60,6 +60,39 @@ deleteSquad:
     TABLE:
       Fn::GetAtt: [BattleRoyaleTable, Arn]
 
+getSquad:
+  handler: handlers.player_handlers.get_squad_handler
+  events:
+    - http:
+        path: /player/squads/{squadname}
+        request:
+          parameters:
+            paths:
+              squadname: true
+        method: get
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId:
+            Ref: ApiGatewayAuthorizer
+        documentation:
+          summary: "Get a squad"
+          tags:
+            - "Player Endpoints"
+          methodResponses:
+            - statusCode: "200"
+              responseBody:
+                description: "JSON containing information about the squad"
+              responseModels:
+                "application/json": SquadSchema
+            - ${self:custom.commonModelSchemaFragments.PlayerException}
+  environment:
+    USER_POOL_CLIENT_ID:
+      Ref: CognitoUserPoolClient
+    USER_POOL_ID:
+      Ref: CognitoUserPool
+    TABLE:
+      Fn::GetAtt: [BattleRoyaleTable, Arn]
+
 addUserToSquad:
   handler: handlers.player_handlers.add_user_to_squad_handler
   events:

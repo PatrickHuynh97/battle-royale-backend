@@ -1,9 +1,8 @@
 from boto3.dynamodb.conditions import Key
-
 from db.dynamodb_connector import DynamoDbConnector
 from exceptions import SquadDoesNotExistException, SquadAlreadyExistsException, UserAlreadyMemberException, \
     UserCouldNotBeRemovedException
-from models import player
+from models import player as player_model
 from models import lobby as lobby_model
 
 
@@ -12,7 +11,7 @@ class Squad:
     A Squad consisting of X members. Squad name's are unique.
     """
 
-    def __init__(self, name: str, owner: str = None):
+    def __init__(self, name: str, owner: player_model.Player = None):
         self.name = name  # name of squad
         self.owner = owner  # owner of squad
         self.lobby_name = None  # will have a value if squad is in a lobby
@@ -91,7 +90,7 @@ class Squad:
         if not squad:
             raise SquadDoesNotExistException("Squad with name {} does not exist".format(self.name))
 
-        self.owner = player.Player(squad['lsi'].split('#')[1])  # owner of squad is the LSI value
+        self.owner = player_model.Player(squad['lsi'].split('#')[1])  # owner of squad is the LSI value
         self.lobby_name = squad.get('lobby-name')
         self.lobby_owner = squad.get('lobby-owner')
 
@@ -104,11 +103,11 @@ class Squad:
         response = self.table.query(
             IndexName='lsi',
             Select='ALL_ATTRIBUTES',
-            KeyConditionExpression=Key('pk').eq('squad-member') & Key('lsi').eq(f'SQUADNAME#{self.name}')
+            KeyConditionExpression=Key('pk').eq('squad-member') & Key('lsi').begins_with(f'SQUADNAME#{self.name}')
         )
 
         for member in response['Items']:
-            squad_member = player.Player(member['sk'].split('#')[3])
+            squad_member = player_model.Player(member['sk'].split('#')[3])
             if squad_member not in self.members:
                 self.members.append(squad_member)
 
@@ -128,7 +127,7 @@ class Squad:
             Item={
                 'pk': 'squad-member',
                 'sk': f'SQUAD#{self.name}#MEMBER#{new_member.username}',
-                'lsi': f'SQUADNAME#{self.name}',
+                'lsi': f'SQUADNAME#{self.name}#SQUADOWNER#{self.owner.username}',
                 'lsi-2': new_member.username
             }
         )
@@ -201,7 +200,6 @@ class Squad:
         Returns True if the squad is in a lobby
         :return: True if squad is in a lobby, otherwise False
         """
-        self.get()
         if self.lobby_name:
             return True
         else:

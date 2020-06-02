@@ -89,6 +89,12 @@ class Player(user.User):
         squads_to_delete = self.get_owned_squads()
         for squad in squads_to_delete:
             squad.delete()
+
+        # leave any squads the player does not own
+        squads_to_leave = self.get_not_owned_squads()
+        for squad in squads_to_leave:
+            squad.remove_member(self)
+
         # delete player from database
         self.table.delete_item(
             Key={
@@ -214,11 +220,13 @@ class Player(user.User):
 
         squads = []
         for item in response['Items']:
-            # get squad and fill with information
-            squad = squad_model.Squad(item['lsi'].split('#')[1])
-            squad.get()
-            squad.get_members()
-            squads.append(squad)
+            # only get squads which calling player does not own
+            if item['lsi'].split('#')[3] != self.username:
+                # get squad and fill with information
+                squad = squad_model.Squad(item['lsi'].split('#')[1])
+                squad.get()
+                squad.get_members()
+                squads.append(squad)
 
         return squads
 
@@ -228,7 +236,6 @@ class Player(user.User):
         :param: squad: Squad to pull from current lobby
         :return: None
         """
-        squad.get()
         if squad.owner != self:
             raise PlayerDoesNotOwnSquadException(f"User {self.username} is not the owner of squad {squad.name}")
 

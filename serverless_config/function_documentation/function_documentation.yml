@@ -260,7 +260,7 @@
         type: string
 
 -
-  name: GetSquadsResponse
+  name: SquadSchema
   contentType: "application/json"
   schema:
     type: object
@@ -273,6 +273,14 @@
         type: array
         items:
           $ref: "{{model: UsernameSchema}}"
+
+-
+  name: GetSquadsResponse
+  contentType: "application/json"
+  schema:
+    type: array
+    items:
+      $ref: "{{model: SquadSchema}}"
 
 # TEST FUNCTIONS
 

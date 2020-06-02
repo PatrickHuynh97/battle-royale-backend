@@ -1,11 +1,11 @@
 from random import randint
 
 from handlers.lambda_helpers import endpoint
-from handlers.schemas import SquadListSchema
+from handlers.schemas import SquadSchema
 from tests.helper_functions import create_test_players, create_test_squads
 
 
-@endpoint(response_schema=SquadListSchema)
+@endpoint(response_schema=SquadSchema)
 def create_test_players_and_squads_handler(event, context):
     """
     Handler for creating test players, and creating some squads from them. We will create 9 Players, then 3 squads
@@ -24,10 +24,8 @@ def create_test_players_and_squads_handler(event, context):
             squad.add_member(members[index])
             index += 1
 
-    return {
-        'squads': [dict(name=squad.name,
-                        owner=squad.owner.username,
-                        members=[dict(username=member.username)
-                                 for member in squad.members])
-                   for squad in created_squads]
-    }
+    return [dict(name=squad.name,
+                 owner=squad.owner.username,
+                 members=[dict(username=member.username)
+                          for member in squad.members])
+            for squad in created_squads]
