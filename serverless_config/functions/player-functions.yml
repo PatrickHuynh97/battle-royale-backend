@@ -99,11 +99,12 @@ addUserToSquad:
   handler: handlers.player_handlers.add_user_to_squad_handler
   events:
     - http:
-        path: /player/squads/{squadname}/member
+        path: /player/squads/{squadname}/member/{username}
         request:
           parameters:
             paths:
               squadname: true
+              username: true
         method: post
         authorizer:
           type: COGNITO_USER_POOLS
@@ -114,9 +115,7 @@ addUserToSquad:
           tags:
             - "Player Endpoints"
           requestBody:
-            description: "JSON containing name of username of User to be added to the squad"
-          requestModels:
-            "application/json": UsernameSchema
+            description: "None"
           methodResponses:
             - statusCode: "200"
               responseBody:
@@ -134,11 +133,12 @@ removeMemberFromSquad:
   handler: handlers.player_handlers.remove_member_from_squad_handler
   events:
     - http:
-        path: /player/squads/{squadname}/member
+        path: /player/squads/{squadname}/member/{username}
         request:
           parameters:
             paths:
               squadname: true
+              username: true
         method: delete
         authorizer:
           type: COGNITO_USER_POOLS
@@ -149,9 +149,7 @@ removeMemberFromSquad:
           tags:
             - "Player Endpoints"
           requestBody:
-            description: "JSON containing username of User to be removed from the squad"
-          requestModels:
-            "application/json": UsernameSchema
+            description: "None"
           methodResponses:
             - statusCode: "200"
               responseBody:

@@ -1,10 +1,10 @@
 from handlers.lambda_helpers import endpoint
-from handlers.schemas import LobbySchema, LobbyPlayerListSchema, UpdateLobbySchema
+from handlers.schemas import LobbySchema, LobbyPlayerListSchema, UpdateLobbySchema, CreateLobbyRequestSchema
 from models.game_master import GameMaster
 from models.squad import Squad
 
 
-@endpoint()
+@endpoint(request_schema=CreateLobbyRequestSchema)
 def create_lobby_handler(event, context):
     """
     Handler for creating a lobby.
@@ -12,8 +12,8 @@ def create_lobby_handler(event, context):
     username = event['calling_user']
     body = event['body']
     lobby_name = body['name']
-    lobby_size = body.get('lobby_size')
-    squad_size = body.get('squad_size')
+    lobby_size = body['lobby_size']
+    squad_size = body['squad_size']
     game_master = GameMaster(username)
     game_master.get()
     game_master.create_lobby(lobby_name=lobby_name, size=lobby_size, squad_size=squad_size)
@@ -21,7 +21,6 @@ def create_lobby_handler(event, context):
 
 @endpoint(response_schema=LobbySchema)
 def get_lobby_handler(event, context):
-
     """
     Handler for getting a lobby, information about the lobby, and all squads in the lobby.
     """
@@ -55,7 +54,7 @@ def delete_lobby_handler(event, context):
     Handler for deleting a lobby.
     """
     username = event['calling_user']
-    lobby_name = event['body']['name']
+    lobby_name = event['pathParameters']['lobby']
 
     GameMaster(username).delete_lobby(lobby_name)
 
@@ -67,7 +66,7 @@ def add_squad_to_lobby_handler(event, context):
     """
     username = event['calling_user']
     lobby_name = event['pathParameters']['lobby']
-    squad_name = event['body']['squad_name']
+    squad_name = event['pathParameters']['squad_name']
 
     GameMaster(username).add_squad_to_lobby(lobby_name, Squad(squad_name))
 
@@ -79,7 +78,7 @@ def remove_squad_from_lobby_handler(event, context):
     """
     username = event['calling_user']
     lobby_name = event['pathParameters']['lobby']
-    squad_name = event['body']['squad_name']
+    squad_name = event['pathParameters']['squad_name']
 
     GameMaster(username).remove_squad_from_lobby(lobby_name, Squad(squad_name))
 

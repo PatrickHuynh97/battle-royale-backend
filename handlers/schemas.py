@@ -60,3 +60,9 @@ class LobbyPlayerState(Schema):
 
 class LobbyPlayerListSchema(Schema):
     players = fields.Nested(LobbyPlayerState, many=True)
+
+
+class CreateLobbyRequestSchema(Schema):
+    name = fields.String(required=True)
+    lobby_size = fields.Integer(required=True)
+    squad_size = fields.Integer(required=True)

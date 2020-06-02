@@ -170,14 +170,14 @@ class TestPlayer(TestWithMockAWSServices):
         squad_1 = self.player_1.create_squad(squad_name_1)
         squad_2 = self.player_1.create_squad(squad_name_2)
 
-        event, context = make_api_gateway_event(body={'username': self.player_2.username},
-                                                calling_user=self.player_1,
-                                                path_params=dict(squadname=squad_1.name))
+        event, context = make_api_gateway_event(calling_user=self.player_1,
+                                                path_params=dict(squadname=squad_1.name,
+                                                                 username=self.player_2.username))
         player_handlers.add_user_to_squad_handler(event, context)
 
-        event, context = make_api_gateway_event(body={'username': self.player_3.username},
-                                                calling_user=self.player_1,
-                                                path_params=dict(squadname=squad_2.name))
+        event, context = make_api_gateway_event(calling_user=self.player_1,
+                                                path_params=dict(squadname=squad_2.name,
+                                                                 username=self.player_3.username))
         player_handlers.add_user_to_squad_handler(event, context)
 
         fresh_squad_1 = Squad(squad_name_1)
@@ -211,9 +211,9 @@ class TestPlayer(TestWithMockAWSServices):
         # create a squad
         squad_1 = self.player_1.create_squad(squad_name_1)
 
-        event, context = make_api_gateway_event(body={'username': self.player_2.username},
-                                                calling_user=self.player_1,
-                                                path_params=dict(squadname=squad_1.name))
+        event, context = make_api_gateway_event(calling_user=self.player_1,
+                                                path_params=dict(squadname=squad_1.name,
+                                                                 username=self.player_2.username))
         player_handlers.add_user_to_squad_handler(event, context)
 
         event, context = make_api_gateway_event(calling_user=self.player_1,

@@ -62,7 +62,7 @@ def add_user_to_squad_handler(event, context):
 
     username = event['calling_user']
     squad_name = event['pathParameters']['squadname']
-    user_to_add = event['body']['username']
+    user_to_add = event['pathParameters']['username']
 
     squad = Squad(squad_name)
     squad.get()
@@ -80,7 +80,7 @@ def remove_member_from_squad_handler(event, context):
 
     username = event['calling_user']
     squad_name = event['pathParameters']['squadname']
-    user_to_remove = event['body']['username']
+    user_to_remove = event['pathParameters']['username']
 
     squad = Squad(squad_name)
     squad.get()

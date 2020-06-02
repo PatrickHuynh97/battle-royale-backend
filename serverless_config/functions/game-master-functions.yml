@@ -64,7 +64,11 @@ deleteLobby:
   handler: handlers.game_master_handlers.delete_lobby_handler
   events:
     - http:
-        path: /game-master/lobby
+        path: /game-master/lobby/{lobby}
+        request:
+          parameters:
+            paths:
+              lobby: true
         method: delete
         authorizer:
           type: COGNITO_USER_POOLS
@@ -91,11 +95,12 @@ addSquadToLobby:
   handler: handlers.game_master_handlers.add_squad_to_lobby_handler
   events:
     - http:
-        path: /game-master/lobby/{lobby}/squads
+        path: /game-master/lobby/{lobby}/squads/{squadname}
         request:
           parameters:
             paths:
               lobby: true
+              squadname: true
         method: post
         authorizer:
           type: COGNITO_USER_POOLS
@@ -106,9 +111,7 @@ addSquadToLobby:
           tags:
             - "Game Master Endpoints"
           requestBody:
-            description: "JSON containing squad name"
-          requestModels:
-            "application/json": LobbySquadRequest
+            description: "None"
           methodResponses:
             - statusCode: "200"
               responseBody:
@@ -126,11 +129,12 @@ removeSquadFromLobby:
   handler: handlers.game_master_handlers.remove_squad_from_lobby_handler
   events:
     - http:
-        path: /game-master/lobby/{lobby}/squads
+        path: /game-master/lobby/{lobby}/squads/{squadname}
         request:
           parameters:
             paths:
               lobby: true
+              squadname: true
         method: delete
         authorizer:
           type: COGNITO_USER_POOLS
@@ -141,9 +145,7 @@ removeSquadFromLobby:
           tags:
             - "Game Master Endpoints"
           requestBody:
-            description: "JSON containing squad name"
-          requestModels:
-            "application/json": LobbySquadRequest
+            description: "None"
           methodResponses:
             - statusCode: "200"
               responseBody:
@@ -166,7 +168,7 @@ getPlayersInLobby:
           parameters:
             paths:
               lobby: true
-        method: post
+        method: get
         authorizer:
           type: COGNITO_USER_POOLS
           authorizerId:
@@ -176,7 +178,7 @@ getPlayersInLobby:
           tags:
             - "Game Master Endpoints"
           requestBody:
-            description: "JSON containing squad name"
+            description: "None"
           methodResponses:
             - statusCode: "200"
               responseBody:
