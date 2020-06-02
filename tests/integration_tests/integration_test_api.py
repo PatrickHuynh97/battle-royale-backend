@@ -28,7 +28,7 @@ def sign_in_user(username, password):
     res = requests.post(url, data=json.dumps({'username': username, 'password': password}))
     if res.status_code == 200:
         return json.loads(res.text)
-    elif res.status_code == 400:
+    elif res.status_code >= 400:
         error = json.loads(res.text)
         if error['type'] == UserDoesNotExistException.tag:
             raise UserDoesNotExistException()

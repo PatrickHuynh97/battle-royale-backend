@@ -50,7 +50,7 @@ class SignOutException(AuthorizationException):
 
 class UserDoesNotExistException(AuthorizationException):
     tag = __qualname__
-    error_code = 400
+    error_code = 404
 
 
 class UserAlreadyExistsException(AuthorizationException):
