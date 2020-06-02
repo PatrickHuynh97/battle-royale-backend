@@ -33,7 +33,11 @@ deleteSquad:
   handler: handlers.player_handlers.delete_squad_handler
   events:
     - http:
-        path: /player/squads
+        path: /player/squads/{squadname}
+        request:
+          parameters:
+            paths:
+              squadname: true
         method: delete
         authorizer:
           type: COGNITO_USER_POOLS
@@ -44,9 +48,7 @@ deleteSquad:
           tags:
             - "Player Endpoints"
           requestBody:
-            description: "JSON containing name of squad to be deleted"
-          requestModels:
-            "application/json": PlayerSquadRequest
+            description: "None"
           methodResponses:
             - statusCode: "200"
               responseBody:

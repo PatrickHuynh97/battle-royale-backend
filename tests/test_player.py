@@ -180,9 +180,29 @@ class TestPlayer(TestWithMockAWSServices):
                                                 path_params=dict(squadname=squad_2.name))
         player_handlers.add_user_to_squad_handler(event, context)
 
+        fresh_squad_1 = Squad(squad_name_1)
+        fresh_squad_2 = Squad(squad_name_2)
+        fresh_squad_1.get_members()
+        fresh_squad_2.get_members()
+
+        # squad 1 has player 1 and 2, squad 2 has players 1 and 3
+        self.assertTrue(self.player_1 in fresh_squad_1.members)
+        self.assertTrue(self.player_2 in fresh_squad_1.members)
+        self.assertTrue(self.player_1 in fresh_squad_2.members)
+        self.assertTrue(self.player_3 in fresh_squad_2.members)
+        self.assertTrue(len(self.player_2.get_not_owned_squads()) == 1)
+        self.assertTrue(len(self.player_3.get_not_owned_squads()) == 1)
+
+        event, context = make_api_gateway_event(body={'name': squad_1.name},
+                                                calling_user=self.player_1,
+                                                path_params=dict(squadname=squad_1.name))
+        player_handlers.delete_squad_handler(event, context)
+
         self.player_1.delete_squad(squad_1)
 
-        self.assertFalse(squad_1.exists())
+        self.assertFalse(Squad(squad_name_1).exists())
+        self.assertTrue(len(self.player_2.get_not_owned_squads()) == 0)
+        self.assertTrue(len(self.player_3.get_not_owned_squads()) == 1)
         self.assertTrue(squad_2.exists())
 
     def test_get_squad(self):

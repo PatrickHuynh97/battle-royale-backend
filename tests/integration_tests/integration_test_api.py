@@ -92,9 +92,8 @@ def create_squad(id_token, squad_name):
 
 
 def delete_squad(id_token, squad_name):
-    url = BASE_URL + '/player/squads'
-    res = requests.delete(url, headers=dict(Authorization=id_token),
-                          data=json.dumps({"name": squad_name}))
+    url = BASE_URL + '/player/squads/' + squad_name
+    res = requests.delete(url, headers=dict(Authorization=id_token))
     if res.status_code == 200:
         return json.loads(res.text)
     elif res.status_code == 400:
@@ -114,6 +113,8 @@ def add_member_to_squad(id_token, squad_name, username):
         error = json.loads(res.text)
         if error['type'] == SquadDoesNotExistException.tag:
             raise SquadDoesNotExistException()
+    else:
+        raise Exception("something went wrong")
 
 
 def get_owned_squads(id_token):
@@ -134,51 +135,65 @@ def get_not_owned_squads(id_token):
         raise Exception("Failed to get not-owned squads")
 
 
-def test_player_squad(username, password):
+def test_player_squad(player_1_username, password):
 
-    player_1_tokens = sign_up_and_sign_in(username, password)
-    player_2_username = "second_player"
+    player_1_tokens = sign_up_and_sign_in(player_1_username, password)
+    player_2_username = "integration-test-user-2"
     player_2_tokens = sign_up_and_sign_in(player_2_username, "second_player_password")
     player_1_id_token = player_1_tokens['id_token']
     player_2_id_token = player_2_tokens['id_token']
 
-    squad_name_1 = "player_1_squad"
-    squad_name_2 = "player_2_squad"
+    p1_squad_name = "player_1_squad"
+    p2_squad_name = "player_2_squad"
 
     # create squad as player_1, retrieve owned squads and assert that said squad is there
-    create_squad(player_1_id_token, squad_name=squad_name_1)
+    create_squad(player_1_id_token, squad_name=p1_squad_name)
     owned_squads = get_owned_squads(player_1_id_token)
     assert (len(owned_squads) == 1)
     assert (len(owned_squads[0]['members']) == 1)
-    assert (owned_squads[0]['members'][0]['username'] == username)
-    assert (owned_squads[0]['owner'] == username)
-    assert (owned_squads[0]['name'] == squad_name_1)
+    assert (owned_squads[0]['members'][0]['username'] == player_1_username)
+    assert (owned_squads[0]['owner'] == player_1_username)
+    assert (owned_squads[0]['name'] == p1_squad_name)
 
     # create squad as player_2, retrieve owned squads and assert that said squad is there
-    create_squad(player_2_id_token, squad_name=squad_name_2)
+    create_squad(player_2_id_token, squad_name=p2_squad_name)
     owned_squads = get_owned_squads(player_2_id_token)
     assert (len(owned_squads) == 1)
     assert (len(owned_squads[0]['members']) == 1)
     assert (owned_squads[0]['members'][0]['username'] == player_2_username)
     assert (owned_squads[0]['owner'] == player_2_username)
-    assert (owned_squads[0]['name'] == squad_name_2)
+    assert (owned_squads[0]['name'] == p2_squad_name)
 
-    # add player_2 to the squad
-    add_member_to_squad(player_1_id_token, squad_name_1, player_2_username)
+    # add player_2 to player_1 squad
+    add_member_to_squad(player_1_id_token, p1_squad_name, player_2_username)
     owned_squads = get_owned_squads(player_1_id_token)
     assert (len(owned_squads[0]['members']) == 2)
-    assert (owned_squads[0]['members'][1]['username'] == player_2_username)
 
-    player_2_not_owned_squads = get_not_owned_squads(player_2_tokens['id_token'])
+    # add player_1 to player_2 squad
+    add_member_to_squad(player_2_id_token, p2_squad_name, player_1_username)
+    owned_squads = get_owned_squads(player_2_id_token)
+    assert (len(owned_squads[0]['members']) == 2)
+
+    player_1_not_owned_squads = get_not_owned_squads(player_1_id_token)
+    assert (len(player_1_not_owned_squads) == 1)
+    assert (len(player_1_not_owned_squads[0]['members']) == 2)
+    assert (player_1_not_owned_squads[0]['owner'] == player_2_username)
+
+    player_2_not_owned_squads = get_not_owned_squads(player_2_id_token)
     assert (len(player_2_not_owned_squads) == 1)
     assert (len(player_2_not_owned_squads[0]['members']) == 2)
-    assert (player_2_not_owned_squads[0]['members'][1]['username'] == player_2_username)
-    assert (player_2_not_owned_squads[0]['owner'] == username)
+    assert (player_2_not_owned_squads[0]['owner'] == player_1_username)
 
     # delete created squad and make sure it was actually deleted
-    delete_squad(player_1_id_token, squad_name_1)
+    delete_squad(player_1_id_token, p1_squad_name)
     owned_squads = get_owned_squads(player_1_id_token)
     assert (len(owned_squads) == 0)
+
+    player_2_not_owned_squads = get_not_owned_squads(player_2_tokens['id_token'])
+    assert (len(player_2_not_owned_squads) == 0)
+    player_2_owned_squads = get_owned_squads(player_2_id_token)
+    assert (len(player_2_owned_squads) == 1)
+    assert (len(player_2_owned_squads[0]['members']) == 2)
 
     delete_user(player_1_tokens['id_token'], player_1_tokens['access_token'])
     delete_user(player_2_tokens['id_token'], player_2_tokens['access_token'])
@@ -187,7 +202,7 @@ def test_player_squad(username, password):
 
 
 if __name__ == "__main__":
-    username = "poo"
+    username = "integration-test-user-1"
     password = "poo123456"
 
     test_user_management(username, password)

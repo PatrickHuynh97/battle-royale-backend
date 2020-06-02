@@ -24,12 +24,12 @@ def delete_squad_handler(event, context):
     from models.squad import Squad
 
     username = event['calling_user']
-    squad_name = event['body']['name']
+    squad_name = event['pathParameters']['squadname']
 
     squad = Squad(squad_name)
     squad.get()
 
-    Player(username).delete_squad(Squad(squad_name))
+    Player(username).delete_squad(squad)
 
 
 @endpoint(response_schema=SquadSchema)

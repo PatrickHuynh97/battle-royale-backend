@@ -11,7 +11,7 @@ class Squad:
     A Squad consisting of X members. Squad name's are unique.
     """
 
-    def __init__(self, name: str, owner: player_model.Player = None):
+    def __init__(self, name: str, owner=None):
         self.name = name  # name of squad
         self.owner = owner  # owner of squad
         self.lobby_name = None  # will have a value if squad is in a lobby
