@@ -119,7 +119,7 @@ class Lobby:
 
     def delete(self):
         """
-        Delete a lobby and all squads in the lobby from the system
+        Delete a lobby and removes all squads in the lobby
         :return: None
         """
         if not self.exists():
@@ -294,8 +294,7 @@ class Lobby:
                 'pk': 'LOBBY',
                 'sk': f'SQUAD#{squad.name}'
             })
-
-        self.squads.remove(squad)
+        squad.set_no_lobby()
 
     def get_squads(self):
         """

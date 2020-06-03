@@ -95,7 +95,7 @@ class TestGameMaster(TestWithMockAWSServices):
 
         # assert it exists
         self.assertTrue(lobby.exists())
-        lobby.delete()
+        lobby = self.game_master_1.delete_lobby(lobby_name)
 
         self.assertFalse(lobby.exists())
 

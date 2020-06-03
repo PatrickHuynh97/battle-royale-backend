@@ -58,6 +58,11 @@ class UserAlreadyExistsException(AuthorizationException):
     error_code = 400
 
 
+class InvalidUsernameException(AuthorizationException):
+    tag = __qualname__
+    error_code = 400
+
+
 class PasswordLengthException(AuthorizationException):
     tag = __qualname__
     error_code = 400

@@ -72,6 +72,10 @@ class GameMaster(user.User):
         :return: None
         """
 
+        self.get()
+        if self.lobby:
+            self.delete_lobby(self.lobby.name)
+
         # delete player from database
         self.table.delete_item(
             Key={
@@ -105,6 +109,7 @@ class GameMaster(user.User):
         :return: None
         """
         lobby = lobby_model.Lobby(lobby_name, owner=self)
+        lobby.get_squads()
         lobby.delete()
         self.set_no_lobby()
         return lobby
@@ -114,20 +119,11 @@ class GameMaster(user.User):
         Get a lobby owned by Game Master if they are currently in one. self.get() should be called before calling this
         :return: Game lobby object
         """
-        lobby = lobby_model.Lobby(self.lobby.name, owner=self)
-        lobby.get()
-        return lobby
-
-    def get_current_lobby(self):
-        """
-        Get name of current lobby game master is in
-        :return: Game lobby object
-        """
         self.get()
-        if self.lobby.name and self.lobby.owner == self:
-            return lobby_model.Lobby(self.lobby.name, self)
-        else:
+        if not self.lobby:
             raise GameMasterNotInLobbyException("Game Master is not currently in a Lobby")
+        self.lobby.get()
+        return self.lobby
 
     def update_lobby(self, lobby_name, size=None, squad_size=None, game_zone_coordinates=None, final_circle=None):
         """

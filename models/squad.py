@@ -154,6 +154,7 @@ class Squad:
         Leave a lobby that a GameMaster has added you to. Requires basic squad information (squad.get())
         :return: None
         """
+        self.get_members()
         lobby = lobby_model.Lobby(self.lobby_name, self.lobby_owner)
         lobby.get_squads()
         lobby.remove_squad(self)

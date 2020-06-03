@@ -66,7 +66,7 @@ def add_squad_to_lobby_handler(event, context):
     """
     username = event['calling_user']
     lobby_name = event['pathParameters']['lobby']
-    squad_name = event['pathParameters']['squad_name']
+    squad_name = event['pathParameters']['squadname']
 
     GameMaster(username).add_squad_to_lobby(lobby_name, Squad(squad_name))
 
@@ -78,7 +78,7 @@ def remove_squad_from_lobby_handler(event, context):
     """
     username = event['calling_user']
     lobby_name = event['pathParameters']['lobby']
-    squad_name = event['pathParameters']['squad_name']
+    squad_name = event['pathParameters']['squadname']
 
     GameMaster(username).remove_squad_from_lobby(lobby_name, Squad(squad_name))
 

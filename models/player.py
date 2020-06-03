@@ -18,8 +18,8 @@ class Player(user.User):
     def __init__(self, username: str):
         super().__init__()
         self.username = username
-        self.lobby = None
-        self.squad = None
+        self.lobby = None  # only has a value if the player is in the lobby
+        self.squad = None  # has the Squad that the player is in a lobby with
         self.table = DynamoDbConnector.get_table()
 
     def __eq__(self, other):

@@ -95,7 +95,7 @@ class ConnectionManager:
         except PlayerNotInLobbyException:
             try:
                 gamemaster = game_master_model.GameMaster(username)
-                lobby = gamemaster.get_current_lobby()  # throws UserNotInLobbyException if they're not in a lobby
+                lobby = gamemaster.get_lobby()  # throws UserNotInLobbyException if they're not in a lobby
                 lobby.get()
 
                 if lobby.state != LobbyState.STARTED:

@@ -1,7 +1,11 @@
 from random import randint
 
+from boto3.dynamodb.conditions import Key, Attr
+
+from db.dynamodb_connector import DynamoDbConnector
 from handlers.lambda_helpers import endpoint
 from handlers.schemas import SquadSchema
+from models.player import Player
 from tests.helper_functions import create_test_players, create_test_squads
 
 
@@ -29,3 +33,23 @@ def create_test_players_and_squads_handler(event, context):
                  members=[dict(username=member.username)
                           for member in squad.members])
             for squad in created_squads]
+
+
+@endpoint()
+def delete_test_players_and_squads_handler(event, context):
+    """
+    Handler for deleting test players.
+    """
+    table = DynamoDbConnector.get_table()
+
+    players_to_delete = table.scan(
+        FilterExpression=Attr("pk").begins_with("test_player_") & Attr("sk").eq('USER')
+    )
+
+    for player in players_to_delete['Items']:
+        # get squad and fill with information
+        player = Player(player['pk'])
+        try:
+            player.delete(None)  # delete test player without access token (they do not exist in cognito anyway)
+        except Exception as e:
+            print(e)

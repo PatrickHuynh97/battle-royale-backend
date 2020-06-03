@@ -12,14 +12,39 @@ createTestPlayersAndSquads:
           summary: "Create 9 test players and 3 test squads, each of which contains 3 of said created test players"
           tags:
             - "Test Endpoints"
-          requestBody:
-            description: "JSON containing name of squad to be created"
           responseModels:
             "application/json": CreateTestPlayersAndSquadsResponse
           methodResponses:
             - statusCode: "200"
               responseBody:
                 description: "JSON containing newly created test squads and their members"
+  environment:
+    USER_POOL_CLIENT_ID:
+      Ref: CognitoUserPoolClient
+    USER_POOL_ID:
+      Ref: CognitoUserPool
+    TABLE:
+      Fn::GetAtt: [BattleRoyaleTable, Arn]
+
+
+deleteTestPlayersAndSquads:
+  handler: handlers.test_handlers.create_test_players_and_squads_handler
+  events:
+    - http:
+        path: /test/create-players-and-squads
+        method: delete
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId:
+            Ref: ApiGatewayAuthorizer
+        documentation:
+          summary: "Deletes all test players and their squads where username begins with test_player_"
+          tags:
+            - "Test Endpoints"
+          methodResponses:
+            - statusCode: "200"
+              responseBody:
+                description: "None"
   environment:
     USER_POOL_CLIENT_ID:
       Ref: CognitoUserPoolClient
