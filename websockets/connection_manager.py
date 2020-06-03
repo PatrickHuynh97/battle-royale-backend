@@ -1,11 +1,12 @@
 import json
 import os
+import time
 from datetime import datetime
 
 import boto3
 from boto3.dynamodb.conditions import Key
 from db.dynamodb_connector import DynamoDbConnector
-from enums import LobbyState, PlayerState
+from enums import LobbyState, PlayerState, WebSocketPushMessageType
 from exceptions import PlayerNotInLobbyException, LobbyNotStartedException
 from models import game_master as game_master_model
 from models import player as player_model
@@ -232,11 +233,6 @@ class ConnectionManager:
         Get a GameMaster from the Lobby session from their connection_id
         :return: connection_id of GameMaster if they are connected, otherwise None
         """
-        """
-        Get a player from the Lobby session from their connection_id
-        :param connection_id: connection id of player websocket connection
-        :return:
-        """
         response = self.table.query(
             IndexName='lsi-2',
             Select='ALL_ATTRIBUTES',
@@ -264,24 +260,119 @@ class ConnectionManager:
 
         return connection_ids
 
-    def notify_player_dead(self, player):
+    def get_game_master_in_lobby(self, lobby):
+        """
+        Gets the GameMaster connected to lobby session
+        :param lobby: lobby to get GameMaster of
+        :return:connection_id of the GameMaster
+        """
+        response = self.table.query(
+            IndexName='lsi',
+            KeyConditionExpression=Key('pk').eq('CONNECTION') & Key('lsi').eq(f'LOBBY#{lobby.unique_id}')
+        )['Items']
+        if response:
+            return response[0]['lsi-2']
+        else:
+            return None
+
+    def push_player_dead(self, player):
         """
         Given a player, send a message to their GM and squad mates that they are dead, if they are connected
         :param player: Player that is now dead
         :return: None
         """
-        payload = dict(name=player.username, state=PlayerState.DEAD.value)
+        payload = dict(event_type=WebSocketPushMessageType.PLAYER_DEAD.value,
+                       value=dict(name=player.username, state=PlayerState.DEAD.value))
 
         gm = self.get_game_master_from_player(player)
         squad_members = self.get_connected_squad_members(player)
 
         if gm:
-            self.send_to_connection(gm, payload)
+            self._send_to_connection(gm, payload)
         for member in squad_members:
-            self.send_to_connection(member, payload)
+            self._send_to_connection(member, payload)
 
-    @staticmethod
-    def send_to_connection(connection_id, data):
+    def push_circle_updates(self, circles: list, lobby):
+        """
+        Given a dict of circles, pushes each sequential circle data to all connected players and game master over each
+        second.
+        :param circles: list of circles to push. They are in order of decreasing size
+        :param lobby: lobby to send circle data to
+        :return: None
+        """
+        # for each circle, push the circle data to the game master and connected players
+        connection_ids = self._get_all_connected(lobby)
+
+        for circle in circles:
+            # each second, push the next circle location to connected players
+            payload = dict(event_type=WebSocketPushMessageType.CIRCLE_CLOSING.value,
+                           value=circle)
+            self._send_to_connections(connection_ids, payload)
+            time.sleep(1)
+
+    def push_game_state(self, lobby):
+        connection_ids = self._get_all_connected(lobby)
+        payload = dict(event_type=WebSocketPushMessageType.GAME_STATE.value,
+                       value=lobby.state.value)
+        self._send_to_connections(connection_ids, payload)
+
+    def push_player_location(self, connection_id, player_lat, player_long):
+        """
+        Given a connection_id belonging to a player, and their latitude and longitude, this is then sent to their
+        squad mates and the game master
+        :param connection_id: connection_id belonging to player
+        :param player_lat:  latitude of player
+        :param player_long: longitude of player
+        :return: None
+        """
+        player = self.get_player(connection_id)
+        player.get()
+
+        payload = dict(event_type=WebSocketPushMessageType.PLAYER_LOCATION.value,
+                       value=dict(name=player.username,
+                                  longitude=player_long,
+                                  latitude=player_lat))
+
+        # push location to squad mates and game master
+        connection_manager = ConnectionManager()
+        connection_ids = connection_manager.get_connected_squad_members(player)
+        gamemaster_connection_id = ConnectionManager().get_game_master_from_player(player)
+        if gamemaster_connection_id:
+            connection_ids.append(gamemaster_connection_id)
+
+        connection_manager._send_to_connections(connection_ids, payload)
+
+    def push_game_master_message(self, connection_id, data):
+        gamemaster = self.get_game_master(connection_id)
+        gamemaster.get()
+
+        # get all players belonging to gamemaster's lobby
+        gamemaster.lobby.get()
+        squad_connection_ids = self.get_players_in_lobby(gamemaster.lobby)
+        payload = dict(event_type=WebSocketPushMessageType.GAME_MASTER_MESSAGE.value,
+                       value=data)
+        self._send_to_connections(squad_connection_ids, payload)
+
+    def push_next_circle(self, lobby):
+        """
+        Pushes the location of a new Circle to all players and the game master
+        :param lobby: Lobby of which next_circle we should push
+        :return: None
+        """
+        connection_ids = self._get_all_connected(lobby)
+        payload = dict(event_type=WebSocketPushMessageType.NEXT_CIRCLE.value,
+                       value=lobby.game_zone.next_circle.to_string())
+        self._send_to_connections(connection_ids, data=payload)
+
+    def _get_all_connected(self, lobby):
+        # gets all players and the GameMaster connected to the lobby
+        connection_ids = self.get_players_in_lobby(lobby)
+        gm = self.get_game_master_in_lobby(lobby)
+        if gm:
+            connection_ids.append(gm)
+        return connection_ids
+
+    def _send_to_connection(self, connection_id, data):
         """
         Send a message to a websocket client.
         :param connection_id: ID of websocket client
@@ -291,6 +382,23 @@ class ConnectionManager:
         websocket_url = os.environ.get('WEBSOCKET_URL')
 
         gateway_api = boto3.client("apigatewaymanagementapi", endpoint_url=websocket_url)
+        self._send_data(gateway_api, connection_id, data)
+
+    def _send_to_connections(self, connection_ids, data):
+        """
+        Send a message to a list of websocket clients.
+        :param connection_ids: list containing connection_ID of each target client
+        :param data: data to send through websocket
+        """
+
+        websocket_url = os.environ.get('WEBSOCKET_URL')
+
+        gateway_api = boto3.client("apigatewaymanagementapi", endpoint_url=websocket_url)
+        for connection_id in connection_ids:
+            self._send_data(gateway_api, connection_id, data)
+
+    @staticmethod
+    def _send_data(gateway_api, connection_id, data):
         try:
             return gateway_api.post_to_connection(ConnectionId=connection_id,
                                                   Data=json.dumps(data).encode('utf-8'))

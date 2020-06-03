@@ -1,9 +1,7 @@
 import json
-from enums import WebSocketEventType, GameMasterMessageType
+from enums import WebSocketEventType
 from exceptions import LiveDataConnectionException
-from models.game_master import GameMaster
-from models.player import Player
-from websockets.connection_manager import ConnectionManager
+from websockets import connection_manager as cm
 from handlers.lambda_helpers import endpoint
 
 
@@ -21,11 +19,11 @@ def connection_handler(event, context):
 
     if event_type == WebSocketEventType.CONNECT.value:
         # save anonymous user's connection_id and wait for further authorization
-        ConnectionManager().connect_unauthorized(connection_id)
+        cm.ConnectionManager().connect_unauthorized(connection_id)
 
     elif event_type == WebSocketEventType.DISCONNECT.value:
         # disconnect a user
-        ConnectionManager().disconnect(connection_id)
+        cm.ConnectionManager().disconnect(connection_id)
     else:
         raise LiveDataConnectionException("Failed to establish connection")
 
@@ -47,7 +45,7 @@ def authorize_connection_handler(event, context):
 
     connection_id = event['requestContext'].get('connectionId')
     access_token = event['body']['access_token']
-    connection_manager = ConnectionManager()
+    connection_manager = cm.ConnectionManager()
 
     # check that access token is valid, and matches that of user to be deleted
     claims = verify_token(access_token, id_token=True)
@@ -57,7 +55,7 @@ def authorize_connection_handler(event, context):
         connection_manager.disconnect_unauthorized_connection(connection_id)
 
     # elevate the connection to a full connection to the respective game lobby
-    ConnectionManager().authorize_connection(connection_id, claims['username'])
+    cm.ConnectionManager().authorize_connection(connection_id, claims['username'])
 
     return {
         'statusCode': 200,
@@ -89,26 +87,13 @@ def player_location_message_handler(event, context):
     :param context: context
     :return: None
     """
-    connection_manager = ConnectionManager()
+    connection_manager = cm.ConnectionManager()
     connection_id = event['requestContext'].get('connectionId')
-
-    player = connection_manager.get_player(connection_id)
-    player.get()
 
     player_long = event['body']['longitude']
     player_lat = event['body']['latitude']
 
-    payload = dict(name=player.username, longitude=player_long, latitude=player_lat)
-
-    # push location to squad mates
-    connection_manager = ConnectionManager()
-    squad_connection_ids = connection_manager.get_connected_squad_members(player)
-    for connection_id in squad_connection_ids:
-        connection_manager.send_to_connection(connection_id, payload)
-
-    # push location to game master
-    gamemaster_connection_id = ConnectionManager().get_game_master_from_player(player)
-    connection_manager.send_to_connection(gamemaster_connection_id, payload)
+    connection_manager.push_player_location(connection_id, player_lat, player_long)
 
 
 @endpoint()
@@ -121,16 +106,8 @@ def gamemaster_message_handler(event, context):
     :param context: context
     :return: None
     """
-    connection_manager = ConnectionManager()
+    connection_manager = cm.ConnectionManager()
     connection_id = event['requestContext'].get('connectionId')
+    message = event['body']['value']
 
-    gamemaster = connection_manager.get_game_master(connection_id)
-    gamemaster.get()
-
-    message = event['body']['message']
-
-    # get all players belonging to gamemaster's lobby
-    gamemaster.lobby.get()
-    squad_connection_ids = connection_manager.get_players_in_lobby(gamemaster.lobby)
-    for connection_id in squad_connection_ids:
-        connection_manager.send_to_connection(connection_id, message)
+    connection_manager.push_game_master_message(connection_id, message)

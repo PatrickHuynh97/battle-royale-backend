@@ -1,6 +1,8 @@
 import json
 from random import randint
 
+from marshmallow import ValidationError
+
 from models.game_master import GameMaster
 from models.player import Player
 
@@ -55,3 +57,33 @@ def create_test_game_masters(usernames: list):
         game_master.put()
         game_masters.append(game_master)
     return game_masters
+
+
+def serialize(event, schema=None):
+    if schema:
+        res = schema.dumps(event)
+        if res.errors:
+            raise ValidationError
+        return res.data
+    else:
+        return json.dumps(event)
+
+
+def make_sqs_events(events: list, receipt_handle="123456", schema=None):
+    """
+    Helper function to create SQS events according to the format that AWS uses.
+
+    :param events: List of dicts
+    :param receipt_handle: Optional message ID
+    :param schema: Marshmallow schema. If specified will try to dump using the schema.
+    :return: A SQS event
+    """
+
+    return {
+        'Records': [
+            {
+                'receiptHandle': receipt_handle,
+                'body': serialize(event, schema)
+            } for event in events
+        ]
+    }

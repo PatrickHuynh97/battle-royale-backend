@@ -1,61 +1,61 @@
 connectionHandler:
-    handler: handlers.websocket_handlers.connection_handler
-    events:
-      - websocket:
-          route: $connect
-      - websocket:
-          route: $disconnect
-    environment:
-      TABLE:
-        Fn::GetAtt: [BattleRoyaleTable, Arn]
+  handler: handlers.websocket_handlers.connection_handler
+  events:
+    - websocket:
+        route: $connect
+    - websocket:
+        route: $disconnect
+  environment:
+    TABLE:
+      Fn::GetAtt: [BattleRoyaleTable, Arn]
 
 authorizeConnectionHandler:
-    handler: handlers.websocket_handlers.authorize_connection_handler
-    events:
-      - websocket:
-          route: authorize
-    environment:
-      TABLE:
-        Fn::GetAtt: [BattleRoyaleTable, Arn]
+  handler: handlers.websocket_handlers.authorize_connection_handler
+  events:
+    - websocket:
+        route: authorize
+  environment:
+    TABLE:
+      Fn::GetAtt: [BattleRoyaleTable, Arn]
 
 defaultHandler:
-    handler: handlers.websocket_handlers.default_handler
-    events:
-      - websocket:
-          route: $default
+  handler: handlers.websocket_handlers.default_handler
+  events:
+    - websocket:
+        route: $default
 
 playerLocationMessageHandler:
-    handler: handlers.websocket_handlers.player_location_message_handler
-    events:
-      - websocket:
-          route: location
-    environment:
-      TABLE:
-        Fn::GetAtt: [BattleRoyaleTable, Arn]
-      WEBSOCKET_URL:
-        !Join
-        - ''
-        - - 'https://'
-          - !Ref WebsocketsApi
-          - '.execute-api.'
-          - ${opt:region, self:provider.region}
-          - '.amazonaws.com/'
-          - ${opt:stage, self:provider.stage}
+  handler: handlers.websocket_handlers.player_location_message_handler
+  events:
+    - websocket:
+        route: location
+  environment:
+    TABLE:
+      Fn::GetAtt: [BattleRoyaleTable, Arn]
+    WEBSOCKET_URL:
+      !Join
+      - ''
+      - - 'https://'
+        - !Ref WebsocketsApi
+        - '.execute-api.'
+        - ${opt:region, self:provider.region}
+        - '.amazonaws.com/'
+        - ${opt:stage, self:provider.stage}
 
 GameMasterMessageHandler:
-    handler: handlers.websocket_handlers.gamemaster_message_handler
-    events:
-      - websocket:
-          route: fromgm
-    environment:
-      TABLE:
-        Fn::GetAtt: [BattleRoyaleTable, Arn]
-      WEBSOCKET_URL:
-        !Join
-        - ''
-        - - 'https://'
-          - !Ref WebsocketsApi
-          - '.execute-api.'
-          - ${opt:region, self:provider.region}
-          - '.amazonaws.com/'
-          - ${opt:stage, self:provider.stage}
+  handler: handlers.websocket_handlers.gamemaster_message_handler
+  events:
+    - websocket:
+        route: fromgm
+  environment:
+    TABLE:
+      Fn::GetAtt: [BattleRoyaleTable, Arn]
+    WEBSOCKET_URL:
+      !Join
+      - ''
+      - - 'https://'
+        - !Ref WebsocketsApi
+        - '.execute-api.'
+        - ${opt:region, self:provider.region}
+        - '.amazonaws.com/'
+        - ${opt:stage, self:provider.stage}

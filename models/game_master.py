@@ -4,6 +4,8 @@ from exceptions import UserDoesNotExistException, LobbyDoesNotExistException, Lo
 from enums import LobbyState
 from models import lobby as lobby_model
 from models import user
+from sqs.closing_circle_queue import CircleQueue
+from websockets import connection_manager
 
 
 class GameMaster(user.User):
@@ -216,10 +218,18 @@ class GameMaster(user.User):
         lobby.get_squads()
         lobby.start()
 
+        connection_manager.ConnectionManager().push_game_state(lobby)
+
+        # enqueue SQS message to generate first circle in X minutes
+        circle_queue = CircleQueue()
+        circle_queue.send_first_circle_event(lobby)
+
     def end_game(self, lobby_name):
         lobby = lobby_model.Lobby(lobby_name, self)
         lobby.get()
         lobby.end()
+
+        connection_manager.ConnectionManager().push_game_state(lobby)
 
     def get_players_in_lobby(self, lobby_name):
         """

@@ -259,6 +259,8 @@ startLobby:
       Ref: CognitoUserPool
     TABLE:
       Fn::GetAtt: [BattleRoyaleTable, Arn]
+    SQS_URL:
+      Ref: CircleQueue
 
 endLobby:
   handler: handlers.game_master_handlers.start_lobby_handler

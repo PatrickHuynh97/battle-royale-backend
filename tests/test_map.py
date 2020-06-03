@@ -1,9 +1,9 @@
-import unittest
 from models.map import GameZone, Circle
 from geopy import distance
+from tests.mock_db import TestWithMockAWSServices
 
 
-class TestGameZone(unittest.TestCase):
+class TestGameZone(TestWithMockAWSServices):
 
     def setUp(self):
 

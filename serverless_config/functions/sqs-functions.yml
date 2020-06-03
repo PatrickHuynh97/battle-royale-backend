@@ -1,0 +1,23 @@
+CircleQueueHandler:
+  handler: handlers.sqs_handlers.circle_queue_handler
+  events:
+    - sqs:
+        arn:
+          Fn:GetAtt:
+            - CircleQueue
+            - Arn
+        batchSize: 1
+  environment:
+    TABLE:
+      Fn::GetAtt: [BattleRoyaleTable, Arn]
+    WEBSOCKET_URL:
+      !Join
+      - ''
+      - - 'https://'
+        - !Ref WebsocketsApi
+        - '.execute-api.'
+        - ${opt:region, self:provider.region}
+        - '.amazonaws.com/'
+        - ${opt:stage, self:provider.stage}
+    SQS_URL:
+      Ref: CircleQueue

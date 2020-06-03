@@ -9,7 +9,7 @@ from exceptions import ApiException
 
 def endpoint(response_schema=None, request_schema=None):
     """
-    Adds a new endpoint to the API
+    Formats a lambda event
     :param response_schema: A schema specifying the output of the function. If None, no validation is performed
     :param request_schema: A schema specifying the required structure of the request.
     """
@@ -38,6 +38,25 @@ def endpoint(response_schema=None, request_schema=None):
             return to_return
         return wrapper
     return lambda_wrapper
+
+
+def sqs_handler(func):
+    """
+    Format an sqs event and run the handler with each event
+    :return: formatted SQS event data
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        event, context = args
+        records = event['Records']
+        for record in records:
+            try:
+                body = json.loads(record['body'])
+            except ValueError as e:
+                print(f"Invalid JSON. Discarding event. Invalid event: {str(record['body'])}")
+                continue
+            func(body, context, **kwargs)
+    return wrapper
 
 
 def postload_body(body, response_schema=None):
