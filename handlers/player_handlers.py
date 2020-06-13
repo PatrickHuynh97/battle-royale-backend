@@ -107,13 +107,29 @@ def get_owned_squads_handler(event, context):
 @endpoint(response_schema=SquadSchema)
 def get_not_owned_squads_handler(event, context):
     """
-    Handler for adding a player to a squad.
+    Handler for getting all owned squads
     """
     from models.player import Player
 
     username = event['calling_user']
 
     squads = Player(username).get_not_owned_squads()
+
+    return [dict(name=squad.name,
+                 owner=squad.owner.username,
+                 members=[dict(username=member.username) for member in squad.members]) for squad in squads]
+
+
+@endpoint(response_schema=SquadSchema)
+def get_squads_handler(event, context):
+    """
+    Handler for getting all squads a user is in, or owns.
+    """
+    from models.player import Player
+
+    username = event['calling_user']
+
+    squads = Player(username).get_squads()
 
     return [dict(name=squad.name,
                  owner=squad.owner.username,

@@ -68,6 +68,7 @@ class Lobby:
         self.table.put_item(
             Item=item
         )
+        self.state = LobbyState.NOT_STARTED
         self.unique_id = unique_id
         self.size = size
         self.squad_size = squad_size
@@ -90,8 +91,8 @@ class Lobby:
 
         self.owner = game_master.GameMaster(lobby['sk'].split('#')[1])
         self.unique_id = lobby.get('lsi-2')
-        self.size = lobby.get('size')
-        self.squad_size = lobby.get('squad-size')
+        self.size = int(lobby.get('size'))
+        self.squad_size = int(lobby.get('squad-size'))
         self.state = LobbyState(lobby.get('state'))
         current_circle = map.Circle(lobby.get('current-circle')) if lobby.get('current-circle') else None
         next_circle = map.Circle(lobby.get('next-circle')) if lobby.get('next-circle') else None
@@ -160,21 +161,21 @@ class Lobby:
             self.squad_size = squad_size
         if current_circle:
             if isinstance(current_circle, map.Circle):
-                attributes_to_update['current-circle'] = dict(Value=current_circle.to_string())
+                attributes_to_update['current-circle'] = dict(Value=current_circle.to_dict())
             else:
-                attributes_to_update['current-circle'] = dict(Value=map.Circle(current_circle).to_string())
+                attributes_to_update['current-circle'] = dict(Value=map.Circle(current_circle).to_dict())
                 current_circle = map.Circle(current_circle)
         if next_circle:
             if isinstance(next_circle, map.Circle):
-                attributes_to_update['next-circle'] = dict(Value=next_circle.to_string())
+                attributes_to_update['next-circle'] = dict(Value=next_circle.to_dict())
             else:
-                attributes_to_update['next-circle'] = dict(Value=map.Circle(next_circle).to_string())
+                attributes_to_update['next-circle'] = dict(Value=map.Circle(next_circle).to_dict())
                 next_circle = map.Circle(next_circle)
         if final_circle:
             if isinstance(final_circle, map.Circle):
-                attributes_to_update['final-circle'] = dict(Value=final_circle.to_string())
+                attributes_to_update['final-circle'] = dict(Value=final_circle.to_dict())
             else:
-                attributes_to_update['final-circle'] = dict(Value=map.Circle(final_circle).to_string())
+                attributes_to_update['final-circle'] = dict(Value=map.Circle(final_circle).to_dict())
                 final_circle = map.Circle(final_circle)
         if game_zone_coordinates:
             attributes_to_update['game-zone-coordinates'] = dict(

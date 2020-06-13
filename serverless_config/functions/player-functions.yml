@@ -215,6 +215,35 @@ getNotOwnedSquads:
     TABLE:
       Fn::GetAtt: [BattleRoyaleTable, Arn]
 
+getSquads:
+  handler: handlers.player_handlers.get_squads_handler
+  events:
+    - http:
+        path: /player/squads
+        method: get
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId:
+            Ref: ApiGatewayAuthorizer
+        documentation:
+          summary: "Get a list of all squads calling user is a member of"
+          tags:
+            - "Player Endpoints"
+          methodResponses:
+            - statusCode: "200"
+              responseBody:
+                description: "List of Squads that calling user is in"
+              responseModels:
+                "application/json": GetSquadsResponse
+            - ${self:custom.commonModelSchemaFragments.PlayerException}
+  environment:
+    USER_POOL_CLIENT_ID:
+      Ref: CognitoUserPoolClient
+    USER_POOL_ID:
+      Ref: CognitoUserPool
+    TABLE:
+      Fn::GetAtt: [BattleRoyaleTable, Arn]
+
 getCurrentLobby:
   handler: handlers.player_handlers.get_current_lobby_handler
   events:

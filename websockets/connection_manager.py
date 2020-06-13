@@ -361,7 +361,7 @@ class ConnectionManager:
         """
         connection_ids = self._get_all_connected(lobby)
         payload = dict(event_type=WebSocketPushMessageType.NEXT_CIRCLE.value,
-                       value=lobby.game_zone.next_circle.to_string())
+                       value=lobby.game_zone.next_circle.to_dict())
         self._send_to_connections(connection_ids, data=payload)
 
     def _get_all_connected(self, lobby):

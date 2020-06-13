@@ -230,6 +230,15 @@ class Player(user.User):
 
         return squads
 
+    def get_squads(self):
+        """
+        Get all squads that Player is in.
+        :return:
+        """
+        not_owned_squads = self.get_not_owned_squads()
+        owned_squads = self.get_owned_squads()
+        return not_owned_squads + owned_squads
+
     def pull_squad_from_lobby(self, squad):
         """
         Pull as squad owner by Player from a lobby

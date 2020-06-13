@@ -52,3 +52,63 @@ deleteTestPlayersAndSquads:
       Ref: CognitoUserPool
     TABLE:
       Fn::GetAtt: [BattleRoyaleTable, Arn]
+
+
+createTestLobbyAndSquads:
+  handler: handlers.test_handlers.create_test_lobby_and_squads_handler
+  events:
+    - http:
+        path: /test/create-lobby-and-squads/squadname
+        method: post
+        request:
+          parameters:
+            paths:
+              squadname: true
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId:
+            Ref: ApiGatewayAuthorizer
+        documentation:
+          summary: "Create 9 test players and 3 test squads. Insert them into a lobby with a squad defined in the path"
+          tags:
+            - "Test Endpoints"
+          responseModels:
+            "application/json": GetLobbyAsPlayerResponse
+          methodResponses:
+            - statusCode: "200"
+              responseBody:
+                description: "JSON containing test lobby"
+  environment:
+    USER_POOL_CLIENT_ID:
+      Ref: CognitoUserPoolClient
+    USER_POOL_ID:
+      Ref: CognitoUserPool
+    TABLE:
+      Fn::GetAtt: [BattleRoyaleTable, Arn]
+
+
+deleteTestLobbyAndSquads:
+  handler: handlers.test_handlers.create_test_lobby_and_squads_handler
+  events:
+    - http:
+        path: /test/create-lobby-and-squads
+        method: delete
+        authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId:
+            Ref: ApiGatewayAuthorizer
+        documentation:
+          summary: "Deletes all test players and squads created by the create-lobby-and-squads test function"
+          tags:
+            - "Test Endpoints"
+          methodResponses:
+            - statusCode: "200"
+              responseBody:
+                description: "None"
+  environment:
+    USER_POOL_CLIENT_ID:
+      Ref: CognitoUserPoolClient
+    USER_POOL_ID:
+      Ref: CognitoUserPool
+    TABLE:
+      Fn::GetAtt: [BattleRoyaleTable, Arn]

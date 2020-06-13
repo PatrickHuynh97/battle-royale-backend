@@ -29,7 +29,7 @@ def connection_handler(event, context):
 
     return {
         'statusCode': 200,
-        'body': json.dumps({'result': 'CONNECTED'})
+        'body': {'result': 'CONNECTED'}
     }
 
 
@@ -59,7 +59,7 @@ def authorize_connection_handler(event, context):
 
     return {
         'statusCode': 200,
-        'body': json.dumps({'result': 'CONNECTED'})
+        'body': {'result': 'CONNECTED'}
     }
 
 

@@ -117,10 +117,8 @@ class User:
             )
             if res['ResponseMetadata']['HTTPStatusCode'] == 200:
                 new_tokens = {'id_token': res["AuthenticationResult"]['IdToken'],
-                              'access_token': res["AuthenticationResult"]['AccessToken']}
-                refresh_token = res["AuthenticationResult"].get('RefreshToken')
-                if refresh_token:
-                    new_tokens['refresh_token'] = refresh_token
+                              'access_token': res["AuthenticationResult"]['AccessToken'],
+                              'refresh_token': refresh_token}
                 return new_tokens
             else:
                 raise SignInException(message="Cognito sign in failed")

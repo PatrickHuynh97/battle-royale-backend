@@ -3,6 +3,8 @@ import sys
 from unittest import mock
 from unittest.mock import MagicMock
 
+from boto3.dynamodb.conditions import Key
+
 from enums import WebSocketEventType, WebSocketPushMessageType
 from exceptions import LobbyNotStartedException
 from handlers.websocket_handlers import connection_handler, authorize_connection_handler, \
@@ -94,6 +96,55 @@ class TestWebsocketHandlers(TestWithMockAWSServices):
             },
         )['Item']
         self.assertEqual(connection_id, response['lsi-2'])
+
+    def test_authorize_user_twice(self):
+        # connect to websocket and authorize gamemaster
+        first_connection_id = '123456'
+        event = self.create_fake_websocket_event(first_connection_id,
+                                                 event_type=WebSocketEventType.CONNECT,
+                                                 body={'access_token': '123456'})
+        connection_handler(event, None)
+
+        unauthorized_connections = ConnectionManager().get_unauthorized_connections()
+        self.assertIn(first_connection_id, unauthorized_connections)
+
+        # authorize above user as a game master in happy flow
+        with mock.patch("sqs.closing_circle_queue.CircleQueue.send_first_circle_event"):
+            self.gamemaster_1.start_game(self.lobby.name)  # game must be started to join a websocket game session
+        event = self.create_fake_websocket_event(first_connection_id,
+                                                 body={'access_token': '123456'})
+        with mock.patch('jwt.verify_token', return_value={'username': self.gamemaster_1.username}):
+            authorize_connection_handler(event, None)
+
+        # gamemaster does not disconnect from the websocket gracefully, and tries to connect again
+        second_connection_id = '654321'
+        event = self.create_fake_websocket_event(second_connection_id,
+                                                 event_type=WebSocketEventType.CONNECT,
+                                                 body={'access_token': '654321'})
+        connection_handler(event, None)
+
+        authorized_connections = self.table.query(
+            KeyConditionExpression=Key('pk').eq('CONNECTION') &
+                                   Key('sk').eq(f'GAMEMASTER#{self.gamemaster_1.username}'))['Items']
+        self.assertTrue(len(authorized_connections) == 1)
+        self.assertEqual(first_connection_id, authorized_connections[0]['lsi-2'])
+        self.assertEqual(self.lobby.unique_id, authorized_connections[0]['lsi'].split('#')[1])
+
+        unauthorized_connections = ConnectionManager().get_unauthorized_connections()
+        self.assertIn(second_connection_id, unauthorized_connections)
+
+        event = self.create_fake_websocket_event(second_connection_id,
+                                                 body={'access_token': '123456'})
+        with mock.patch('jwt.verify_token', return_value={'username': self.gamemaster_1.username}):
+            authorize_connection_handler(event, None)
+
+        # gamemaster's new connection should be authorized and overwritten the previous connection_id
+        authorized_connections = self.table.query(
+            KeyConditionExpression=Key('pk').eq('CONNECTION') &
+                                   Key('sk').eq(f'GAMEMASTER#{self.gamemaster_1.username}'))['Items']
+        self.assertTrue(len(authorized_connections) == 1)
+        self.assertEqual(second_connection_id, authorized_connections[0]['lsi-2'])
+        self.assertEqual(self.lobby.unique_id, authorized_connections[0]['lsi'].split('#')[1])
 
     def test_authorize_connection_handler_lobby_not_started(self):
         connection_id = '123456'

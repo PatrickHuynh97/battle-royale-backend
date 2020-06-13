@@ -63,7 +63,7 @@ class TestCircleQueue(TestWithMockAWSServices):
             lobby.get()
 
             self.assertEqual(WebSocketPushMessageType.NEXT_CIRCLE.value, websocket_message['event_type'])
-            self.assertEqual(lobby.game_zone.next_circle.to_string(), websocket_message['value'])
+            self.assertEqual(lobby.game_zone.next_circle.to_dict(), websocket_message['value'])
             self.assertTrue(len(mock_circle_queue.records) == 1)
 
             # make sure that closing of the first circle has been scheduled

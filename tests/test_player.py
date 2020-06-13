@@ -6,7 +6,7 @@ from unittest import mock
 from exceptions import UserAlreadyExistsException, SquadAlreadyExistsException, PlayerOwnsSquadException, \
     PlayerDoesNotOwnSquadException, UserAlreadyMemberException, LobbyNotStartedException, SquadDoesNotExistException
 from handlers.player_handlers import get_owned_squads_handler, set_dead_handler, set_alive_handler, \
-    get_current_lobby_handler
+    get_current_lobby_handler, get_squads_handler
 from handlers.schemas import LobbySchema, SquadSchema
 from enums import PlayerState
 from models.game_master import GameMaster
@@ -372,6 +372,32 @@ class TestPlayer(TestWithMockAWSServices):
         self.assertEqual(1, len(body))
         self.assertEqual(squad_1.name, body[0]['name'])
         self.assertEqual(3, len(body[0]['members']))
+
+    def test_get_all_squads(self):
+        # player_1 creates squad, adds player_2
+        squad_1_name = 'test-squad-1'
+        squad_2_name = 'test-squad-2'
+
+        squad_1 = self.player_1.create_squad(squad_1_name)
+        squad_2 = self.player_2.create_squad(squad_2_name)
+
+        self.player_1.add_member_to_squad(squad_1, self.player_2)
+        self.player_2.add_member_to_squad(squad_2, self.player_1)
+        self.player_1.add_member_to_squad(squad_1, self.player_3)
+
+        event, context = make_api_gateway_event(calling_user=self.player_1, body={'username': self.player_1.username})
+        res = get_squads_handler(event, context)
+
+        self.assertEqual(200, res['statusCode'])
+        squads = SquadSchema().loads(res['body'], many=True)
+        for squad in squads:
+            if squad['name'] == squad_1_name:
+                self.assertEqual(self.player_1.username, squad['owner'])
+                self.assertEqual(3, len(squad['members']))
+
+            elif squad['name'] == squad_2_name:
+                self.assertEqual(self.player_2.username, squad['owner'])
+                self.assertEqual(2, len(squad['members']))
 
     def test_get_current_lobby_handler(self):
         # create squad, and add to lobby

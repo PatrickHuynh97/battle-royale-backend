@@ -1,5 +1,3 @@
-import os
-
 from handlers.lambda_helpers import endpoint
 from models import player
 from exceptions import UserAlreadyExistsException, PasswordLengthException, InvalidUsernameException
@@ -17,8 +15,8 @@ def sign_up_handler(event, context):
     body = event['body']
     username = body['username']
 
-    if username.startswith("test_player_"):
-        raise InvalidUsernameException("Username beginning with test_player_ is not allowed")
+    if username.startswith("test_player_") or username.startswith("test_game_master_"):
+        raise InvalidUsernameException("Usernames beginning with test_player_ or test_game_master_ are not allowed")
 
     # ensure username is not already in use
     if player.Player(username).exists():

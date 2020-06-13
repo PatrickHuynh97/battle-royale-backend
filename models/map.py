@@ -47,7 +47,11 @@ class Circle(MapObject):
             return self.centre == other.centre and self.radius == other.radius
         return False
 
-    def to_string(self):
+    def to_dict(self):
+        """
+        Returns a dict representation of the data which defines a circle, namely the centre coordinates and the radius
+        :return: Dict containing centre of circle and the radius
+        """
         return dict(
             centre=self.coordinate_to_string(self.centre),
             radius=str(self.radius)
