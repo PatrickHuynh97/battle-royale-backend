@@ -3,7 +3,7 @@ from handlers.player_handlers import pull_squad_from_lobby_handler
 from models.game_master import GameMaster
 from models.player import Player
 from models.squad import Squad
-from tests.helper_functions import make_api_gateway_event
+from helper_functions import make_api_gateway_event
 from tests.mock_db import TestWithMockAWSServices
 
 

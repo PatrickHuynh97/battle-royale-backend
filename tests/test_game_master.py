@@ -9,7 +9,7 @@ from handlers.schemas import LobbySchema, LobbyPlayerListSchema
 from enums import LobbyState
 from models.game_master import GameMaster
 from models.player import Player
-from tests.helper_functions import make_api_gateway_event, create_test_game_masters, create_test_players, \
+from helper_functions import make_api_gateway_event, create_test_game_masters, create_test_players, \
     create_test_squads
 from tests.mock_db import TestWithMockAWSServices
 

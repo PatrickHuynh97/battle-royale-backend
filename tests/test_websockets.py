@@ -9,7 +9,7 @@ from enums import WebSocketEventType, WebSocketPushMessageType
 from exceptions import LobbyNotStartedException
 from handlers.websocket_handlers import connection_handler, authorize_connection_handler, \
     player_location_message_handler, gamemaster_message_handler
-from tests.helper_functions import create_test_players, create_test_game_masters, create_test_squads
+from helper_functions import create_test_players, create_test_game_masters, create_test_squads
 from tests.mock_db import TestWithMockAWSServices
 from websockets.connection_manager import ConnectionManager
 

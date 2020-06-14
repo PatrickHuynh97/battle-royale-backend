@@ -3,7 +3,7 @@ from unittest import mock
 from enums import SQSEventType, WebSocketPushMessageType
 from handlers.sqs_handlers import circle_queue_handler
 from models.map import Circle
-from tests.helper_functions import create_test_players, create_test_game_masters, create_test_squads, make_sqs_events
+from helper_functions import create_test_players, create_test_game_masters, create_test_squads, make_sqs_events
 from tests.mock_db import TestWithMockAWSServices
 from tests.test_classes import MockQueue
 

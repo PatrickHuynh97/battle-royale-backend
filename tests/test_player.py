@@ -12,7 +12,7 @@ from enums import PlayerState
 from models.game_master import GameMaster
 from models import player as player_model
 from models.squad import Squad
-from tests.helper_functions import make_api_gateway_event, create_test_players
+from helper_functions import make_api_gateway_event, create_test_players
 from tests.mock_db import TestWithMockAWSServices
 os.environ['local_test'] = "True"  # must be set to prevent jwt file http GET from being called in 'handlers' import
 from handlers import account_handlers, player_handlers

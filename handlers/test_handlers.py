@@ -1,6 +1,6 @@
 from random import randint
 
-from boto3.dynamodb.conditions import Key, Attr
+from boto3.dynamodb.conditions import Attr
 
 from db.dynamodb_connector import DynamoDbConnector
 from handlers.lambda_helpers import endpoint
@@ -9,7 +9,7 @@ from models.game_master import GameMaster
 from models.map import Circle
 from models.player import Player
 from models.squad import Squad
-from tests.helper_functions import create_test_players, create_test_squads, create_test_game_masters
+from helper_functions import create_test_players, create_test_squads, create_test_game_masters
 
 
 @endpoint(response_schema=SquadSchema)

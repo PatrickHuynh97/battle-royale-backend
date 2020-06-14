@@ -1,10 +1,9 @@
-from boto3.dynamodb.conditions import Key, Attr
+from boto3.dynamodb.conditions import Attr
 
-from db.dynamodb_connector import DynamoDbConnector
-from handlers.schemas import SquadSchema, LobbySchema
+from handlers.schemas import SquadSchema
 from handlers.test_handlers import create_test_players_and_squads_handler, delete_test_players_and_squads_handler, \
     create_test_lobby_and_squads_handler, delete_test_lobby_and_squads_handler
-from tests.helper_functions import create_test_players, create_test_game_masters, make_api_gateway_event
+from helper_functions import create_test_players, make_api_gateway_event
 from tests.mock_db import TestWithMockAWSServices
 
 
