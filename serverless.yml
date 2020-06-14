@@ -88,12 +88,14 @@ package:
     - 'serverless_config/*'
     - 'websockets/*'
     - 'sqs/*'
+    - 'tests/*' # todo use serverless-if-else to remove this from deployment depending on --stage variable
+
   exclude:
     - 'node_modules'
-    - 'tests/*'
 plugins:
   - serverless-python-requirements
   - serverless-aws-documentation
+  - serverless-plugin-split-stacks
 resources:
   - ${file(serverless_config/resources/dynamo-db.yml)}
   - ${file(serverless_config/resources/cognito-user-pool.yml)}

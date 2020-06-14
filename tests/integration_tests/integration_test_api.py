@@ -7,7 +7,7 @@ from exceptions import UserDoesNotExistException, UserAlreadyExistsException, Au
     GameMasterNotInLobbyException
 from handlers.schemas import SquadSchema, LobbySchema
 
-BASE_URL = "https://ffh4p5qi99.execute-api.eu-central-1.amazonaws.com/dev"
+BASE_URL = "https://2jvljq6cs5.execute-api.eu-central-1.amazonaws.com/dev"
 
 
 class TestApiException(Exception):
