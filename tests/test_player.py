@@ -286,17 +286,21 @@ class TestPlayer(TestWithMockAWSServices):
         squad_1 = self.player_1.create_squad(squad_name_1)
         self.player_1.add_member_to_squad(squad_1, self.player_2)
 
-        # try to remove owner from squad
+        # try to remove owner from squad as the owner
         self.assertRaises(PlayerOwnsSquadException, self.player_1.remove_member_from_squad, squad_1, self.player_1)
 
     def test_remove_members_from_squad_not_owner(self):
-        # create squad, add one members
+        # create squad, add two members
         squad_name_1 = 'test-squad-1'
         squad_1 = self.player_1.create_squad(squad_name_1)
         self.player_1.add_member_to_squad(squad_1, self.player_2)
+        self.player_1.add_member_to_squad(squad_1, self.player_3)
 
-        # try to remove players as Player who is not owner
-        self.assertRaises(PlayerDoesNotOwnSquadException, self.player_2.remove_member_from_squad, squad_1, self.player_1)
+        # try to remove squad owner from squad, as a member that is not the owner
+        self.assertRaises(PlayerOwnsSquadException, self.player_2.remove_member_from_squad, squad_1, self.player_1)
+
+        # try to remove other member from squad, as a member that is not the owner
+        self.assertRaises(PlayerDoesNotOwnSquadException, self.player_2.remove_member_from_squad, squad_1, self.player_3)
 
     def test_remove_members_from_squad(self):
         # create squad, add two members, assert that squad now has 2 members in it
@@ -306,35 +310,15 @@ class TestPlayer(TestWithMockAWSServices):
         self.player_1.add_member_to_squad(squad_1, self.player_3)
         self.assertEqual(3, len(squad_1.members))
 
-    def test_leave_squad(self):
-        # player_1 creates squad, adds player_2 and player_3
-        squad_name_1 = 'test-squad-1'
-        squad = self.player_1.create_squad(squad_name_1)
-        self.player_1.add_member_to_squad(squad, self.player_2)
-        self.player_1.add_member_to_squad(squad, self.player_3)
+        # as the owner, remove player_2
+        self.player_1.remove_member_from_squad(squad_1, self.player_2)
+        squad_1.get_members()
+        self.assertTrue(self.player_2 not in squad_1.members)
 
-        # get fresh squad object to verify
-        fresh_squad = Squad(squad_name_1)
-        fresh_squad.get()
-        fresh_squad.get_members()
-        self.assertEqual(self.player_1, fresh_squad.owner)
-        self.assertIn(self.player_1, fresh_squad.members)
-        self.assertIn(self.player_2, fresh_squad.members)
-        self.assertIn(self.player_3, fresh_squad.members)
-
-        # player_1 cannot leave squad as they own it
-        self.assertRaises(PlayerOwnsSquadException, self.player_1.leave_squad, fresh_squad)
-
-        # player 3 leaves squad
-        self.player_3.leave_squad(fresh_squad)
-
-        # get fresh squad object again
-        fresh_squad = Squad(squad_name_1)
-        fresh_squad.get()
-        fresh_squad.get_members()
-        self.assertIn(self.player_1, fresh_squad.members)
-        self.assertIn(self.player_2, fresh_squad.members)
-        self.assertNotIn(self.player_3, fresh_squad.members)
+        # as player_3, remove self from squad
+        self.player_3.remove_member_from_squad(squad_1, self.player_3)
+        squad_1.get_members()
+        self.assertTrue(self.player_3 not in squad_1.members)
 
     def test_get_not_owned_squads(self):
         # player_1 creates squad, adds player_2

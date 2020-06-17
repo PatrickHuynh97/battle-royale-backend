@@ -15,12 +15,10 @@ class TestGameZone(TestWithMockAWSServices):
         # final zone is middle of the CQB field and is 40 meters in diameter
         #   56.130722, 12.900430, radius 35 meters
 
-        self.game_zone_coordinates = dict(
-            c1=dict(latitude="56.132501", longitude="12.903200"),
-            c2=dict(latitude="56.132757", longitude="12.897164"),
-            c3=dict(latitude="56.130781", longitude="12.896993"),
-            c4=dict(latitude="56.130309", longitude="12.902884")
-        )
+        self.game_zone_coordinates = [dict(latitude="56.132501", longitude="12.903200"),
+                                      dict(latitude="56.132757", longitude="12.897164"),
+                                      dict(latitude="56.130781", longitude="12.896993"),
+                                      dict(latitude="56.130309", longitude="12.902884")]
         self.final_circle = Circle(dict(centre=dict(latitude=56.130722, longitude=12.900430), radius=20 / 1000))
 
     def check_if_circle_contains_circle(self, outer_circle, inner_circle):
@@ -83,10 +81,12 @@ class TestGameZone(TestWithMockAWSServices):
         self.assertIsNotNone(next_circle_radius)
 
         # check that the centre of the next circle is within the game zone
-        gz_minimum_latitude = min([value['latitude'] for coordinate, value in self.game_zone_coordinates.items()])
-        gz_maximum_latitude = max([value['latitude'] for coordinate, value in self.game_zone_coordinates.items()])
-        gz_minimum_longitude = min([value['longitude'] for coordinate, value in self.game_zone_coordinates.items()])
-        gz_maximum_longitude = max([value['longitude'] for coordinate, value in self.game_zone_coordinates.items()])
+        all_latitudes = [coordinate['latitude'] for coordinate in self.game_zone_coordinates]
+        all_longitudes = [coordinate['longitude'] for coordinate in self.game_zone_coordinates]
+        gz_minimum_latitude = min(all_latitudes)
+        gz_maximum_latitude = max(all_latitudes)
+        gz_minimum_longitude = min(all_longitudes)
+        gz_maximum_longitude = max(all_longitudes)
 
         self.assertTrue(float(gz_minimum_latitude) < next_circle_centre['latitude'] < float(gz_maximum_latitude))
         self.assertTrue(float(gz_minimum_longitude) < next_circle_centre['longitude'] < float(gz_maximum_longitude))
@@ -106,11 +106,12 @@ class TestGameZone(TestWithMockAWSServices):
         self.assertIsNotNone(first_next_circle)
         self.assertIsNotNone(first_next_circle)
 
-        # check that the centre of the next circle is within the game zone
-        gz_min_latitude = min([value['latitude'] for coordinate, value in self.game_zone_coordinates.items()])
-        gz_max_latitude = max([value['latitude'] for coordinate, value in self.game_zone_coordinates.items()])
-        gz_min_longitude = min([value['longitude'] for coordinate, value in self.game_zone_coordinates.items()])
-        gz_max_longitude = max([value['longitude'] for coordinate, value in self.game_zone_coordinates.items()])
+        all_latitudes = [coordinate['latitude'] for coordinate in self.game_zone_coordinates]
+        all_longitudes = [coordinate['longitude'] for coordinate in self.game_zone_coordinates]
+        gz_min_latitude = min(all_latitudes)
+        gz_max_latitude = max(all_latitudes)
+        gz_min_longitude = min(all_longitudes)
+        gz_max_longitude = max(all_longitudes)
 
         self.assertTrue(float(gz_min_latitude) < first_next_circle.centre['latitude'] < float(gz_max_latitude))
         self.assertTrue(float(gz_min_longitude) < first_next_circle.centre['longitude'] < float(gz_max_longitude))
@@ -142,10 +143,12 @@ class TestGameZone(TestWithMockAWSServices):
         )
 
         # get lat and long values for game zone
-        gz_min_latitude = min([value['latitude'] for coordinate, value in self.game_zone_coordinates.items()])
-        gz_max_latitude = max([value['latitude'] for coordinate, value in self.game_zone_coordinates.items()])
-        gz_min_longitude = min([value['longitude'] for coordinate, value in self.game_zone_coordinates.items()])
-        gz_max_longitude = max([value['longitude'] for coordinate, value in self.game_zone_coordinates.items()])
+        all_latitudes = [coordinate['latitude'] for coordinate in self.game_zone_coordinates]
+        all_longitudes = [coordinate['longitude'] for coordinate in self.game_zone_coordinates]
+        gz_min_latitude = min(all_latitudes)
+        gz_max_latitude = max(all_latitudes)
+        gz_min_longitude = min(all_longitudes)
+        gz_max_longitude = max(all_longitudes)
 
         # generate first circle, make sure it contains the final_circle and is in the game_zone
         game_zone.create_next_circle()

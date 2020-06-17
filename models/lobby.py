@@ -137,7 +137,7 @@ class Lobby:
     def update(self,
                size: int = None,
                squad_size: int = None,
-               game_zone_coordinates: dict = None,
+               game_zone_coordinates: list = None,
                current_circle: dict = None,
                next_circle: dict = None,
                final_circle: dict = None):
@@ -145,7 +145,7 @@ class Lobby:
         Update lobby information
         :param size: New size of lobby
         :param squad_size: New squad size allowed in lobby
-        :param game_zone_coordinates: dict containing c1, c2, c3 and c4, coordinates which make up the entire game zone
+        :param game_zone_coordinates: list containing coordinates which make up the entire game zone
         :param current_circle: dict containing coordinates and radius of the current circle
         :param next_circle: dict containing coordinates and radius of the next circle
         :param final_circle: position of the final circle. If defined before game starts, each circle will be

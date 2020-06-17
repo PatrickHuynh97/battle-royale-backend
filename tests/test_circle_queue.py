@@ -19,12 +19,10 @@ class TestCircleQueue(TestWithMockAWSServices):
         self.squad_1, self.squad_2, self.squad_3 = create_test_squads([self.player_1, self.player_2, self.player_3])
 
         # create game lobby with predefined coordinates
-        self.game_zone_coordinates = dict(
-            c1=dict(latitude="56.132501", longitude="12.903200"),
-            c2=dict(latitude="56.132757", longitude="12.897164"),
-            c3=dict(latitude="56.130781", longitude="12.896993"),
-            c4=dict(latitude="56.130309", longitude="12.902884")
-        )
+        self.game_zone_coordinates = [dict(latitude="56.132501", longitude="12.903200"),
+                                      dict(latitude="56.132757", longitude="12.897164"),
+                                      dict(latitude="56.130781", longitude="12.896993"),
+                                      dict(latitude="56.130309", longitude="12.902884")]
         self.final_circle = Circle(dict(centre=dict(latitude=56.130722, longitude=12.900430), radius=20 / 1000))
 
     def test_first_circle_event(self):

@@ -88,7 +88,7 @@ createTestLobbyAndSquads:
 
 
 deleteTestLobbyAndSquads:
-  handler: handlers.test_handlers.create_test_lobby_and_squads_handler
+  handler: handlers.test_handlers.delete_test_lobby_and_squads_handler
   events:
     - http:
         path: /test/create-lobby-and-squads

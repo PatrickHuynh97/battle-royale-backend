@@ -18,7 +18,7 @@ def create_test_players_and_squads_handler(event, context):
     Handler for creating test players, and creating some squads from them. We will create 9 Players, then 3 squads
     of 3 with those 9 Players.
     """
-    test_player_usernames = [f"test_player_{randint(1,100000)}" for i in range(0, 9)]
+    test_player_usernames = [f"test_player_{randint(1, 100000)}" for i in range(0, 9)]
 
     created_players = create_test_players(test_player_usernames)
 
@@ -54,7 +54,7 @@ def create_test_lobby_and_squads_handler(event, context):
     of 3 with those 9 Players.
     """
     squad_name = event['pathParameters']['squadname']
-    test_player_usernames = [f"test_player_{randint(1,100000)}" for i in range(0, 9)]
+    test_player_usernames = [f"test_player_{randint(1, 100000)}" for i in range(0, 9)]
 
     # create test squad ands populate with fake players
     created_players = create_test_players(test_player_usernames)
@@ -68,14 +68,12 @@ def create_test_lobby_and_squads_handler(event, context):
             index += 1
 
     # create test game master, create lobby, and add all fake squads to it
-    game_master = create_test_game_masters([f'test_game_master_{randint(1,100000)}'])[0]
-    lobby_name = f"test_lobby_{randint(1,100000)}"
-    game_zone_coordinates = dict(
-        c1=dict(latitude="56.132501", longitude="12.903200"),
-        c2=dict(latitude="56.132757", longitude="12.897164"),
-        c3=dict(latitude="56.130781", longitude="12.896993"),
-        c4=dict(latitude="56.130309", longitude="12.902884")
-    )
+    game_master = create_test_game_masters([f'test_game_master_{randint(1, 100000)}'])[0]
+    lobby_name = f"test_lobby_{randint(1, 100000)}"
+    game_zone_coordinates = [dict(latitude="56.132501", longitude="12.903200"),
+                             dict(latitude="56.132757", longitude="12.897164"),
+                             dict(latitude="56.130781", longitude="12.896993"),
+                             dict(latitude="56.130309", longitude="12.902884")]
     final_circle = Circle(dict(centre=dict(latitude=56.130722, longitude=12.900430), radius=20 / 1000))
 
     lobby = game_master.create_lobby(lobby_name)
@@ -90,20 +88,20 @@ def create_test_lobby_and_squads_handler(event, context):
     lobby.get()
     lobby.get_squads()
     return {
-            'name': lobby.name,
-            'owner': lobby.owner.username,
-            'state': lobby.state.value,
-            'size': lobby.size,
-            'squad_size': lobby.squad_size,
-            'game_zone_coordinates': lobby.game_zone.coordinates,
-            'current_circle': lobby.game_zone.current_circle,
-            'next_circle': lobby.game_zone.next_circle,
-            'squads': [dict(name=squad.name,
-                            owner=squad.owner.username,
-                            members=[dict(username=member.username)
-                                     for member in squad.members])
-                       for squad in lobby.squads]
-        }
+        'name': lobby.name,
+        'owner': lobby.owner.username,
+        'state': lobby.state.value,
+        'size': lobby.size,
+        'squad_size': lobby.squad_size,
+        'game_zone_coordinates': lobby.game_zone.coordinates,
+        'current_circle': lobby.game_zone.current_circle,
+        'next_circle': lobby.game_zone.next_circle,
+        'squads': [dict(name=squad.name,
+                        owner=squad.owner.username,
+                        members=[dict(username=member.username)
+                                 for member in squad.members])
+                   for squad in lobby.squads]
+    }
 
 
 @endpoint()

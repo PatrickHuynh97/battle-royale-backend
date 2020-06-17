@@ -139,16 +139,9 @@
   name: LobbyGameZoneCoordinatesSchema
   contentType: "application/json"
   schema:
-    type: object
-    properties:
-      c1:
-        $ref: "{{model: CoordinatesSchema}}"
-      c2:
-        $ref: "{{model: CoordinatesSchema}}"
-      c3:
-        $ref: "{{model: CoordinatesSchema}}"
-      c4:
-        $ref: "{{model: CoordinatesSchema}}"
+    type: array
+    items:
+      $ref: "{{model: CoordinatesSchema}}"
 
 -
   name: LobbySettingsRequest

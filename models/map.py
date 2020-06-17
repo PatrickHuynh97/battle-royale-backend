@@ -282,22 +282,17 @@ class GameZone(MapObject):
         :return: approximate centre of the map coordinates, width and height of game zone
         """
         # get length of shortest side and longest side of game zone
-        l1 = self.distance_between(self.coordinates['c1'], self.coordinates['c2'])
-        l2 = self.distance_between(self.coordinates['c1'], self.coordinates['c3'])
-        l3 = self.distance_between(self.coordinates['c1'], self.coordinates['c4'])
+        l1 = self.distance_between(self.coordinates[0], self.coordinates[1])
+        l2 = self.distance_between(self.coordinates[0], self.coordinates[2])
+        l3 = self.distance_between(self.coordinates[0], self.coordinates[3])
         sorted_sides = sorted([l1, l2, l3])
         shortest_side = sorted_sides[0]
         diagonal = sorted_sides[2]
 
         # get coordinates of approximate centre of game zone
-        all_latitudes = [self.coordinates['c1']['latitude'],
-                         self.coordinates['c2']['latitude'],
-                         self.coordinates['c3']['latitude'],
-                         self.coordinates['c4']['latitude']]
-        all_longitudes = [self.coordinates['c1']['longitude'],
-                          self.coordinates['c2']['longitude'],
-                          self.coordinates['c3']['longitude'],
-                          self.coordinates['c4']['longitude']]
+        all_latitudes = [coordinate['latitude'] for coordinate in self.coordinates]
+        all_longitudes = [coordinate['longitude'] for coordinate in self.coordinates]
+
         corner_1 = min(all_latitudes), min(all_longitudes)
         corner_2 = max(all_latitudes), max(all_longitudes)
 
@@ -307,24 +302,21 @@ class GameZone(MapObject):
                       longitude=corner_1[1] + longitude_distance / 2)
         return centre, shortest_side, diagonal
 
-    def game_zone_coordinates_to_float(self, game_zone_coordinates):
+    @staticmethod
+    def game_zone_coordinates_to_float(game_zone_coordinates):
         """
         Converts coordinates in a game_zone_coordinates object to floats
         :param game_zone_coordinates: game_zone_coordinates
         :return: game_zone_coordinates where coordinate values are float
         """
         if game_zone_coordinates:
-            return dict(c1=self.coordinate_to_float(game_zone_coordinates['c1']),
-                        c2=self.coordinate_to_float(game_zone_coordinates['c2']),
-                        c3=self.coordinate_to_float(game_zone_coordinates['c3']),
-                        c4=self.coordinate_to_float(game_zone_coordinates['c4']))
+            return [dict(latitude=float(coordinate['latitude']),
+                         longitude=float(coordinate['longitude'])) for coordinate in game_zone_coordinates]
 
     def dump_game_zone_coordinates(self):
         """
         Dumps game_zone_coordinates to string coordinate values
         :return: dict containing game_zone_coordinates as strings
         """
-        return dict(c1=self.coordinate_to_string(self.coordinates['c1']),
-                    c2=self.coordinate_to_string(self.coordinates['c2']),
-                    c3=self.coordinate_to_string(self.coordinates['c3']),
-                    c4=self.coordinate_to_string(self.coordinates['c4']))
+        return [dict(latitude=str(coordinate['latitude']),
+                     longitude=str(coordinate['longitude'])) for coordinate in self.coordinates]

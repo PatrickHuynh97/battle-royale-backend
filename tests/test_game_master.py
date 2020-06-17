@@ -45,14 +45,14 @@ class TestGameMaster(TestWithMockAWSServices):
         squad_size = 3
         self.game_master_1.create_lobby(lobby_name, size=lobby_size, squad_size=squad_size)
 
-        game_zone_coordinates = dict(c1=dict(longitude='1.125', latitude='12.123'),
-                                     c2=dict(longitude='4.123', latitude='12.123'),
-                                     c3=dict(longitude='4.123', latitude='12.123'),
-                                     c4=dict(longitude='12.123', latitude='12.123'))
-        game_zone_coordinates_as_float = dict(c1=dict(longitude=1.125, latitude=12.123),
-                                              c2=dict(longitude=4.123, latitude=12.123),
-                                              c3=dict(longitude=4.123, latitude=12.123),
-                                              c4=dict(longitude=12.123, latitude=12.123))
+        game_zone_coordinates = [dict(longitude='1.125', latitude='12.123'),
+                                 dict(longitude='4.123', latitude='12.123'),
+                                 dict(longitude='4.123', latitude='12.123'),
+                                 dict(longitude='12.123', latitude='12.123')]
+        game_zone_coordinates_as_float = [dict(longitude=1.125, latitude=12.123),
+                                          dict(longitude=4.123, latitude=12.123),
+                                          dict(longitude=4.123, latitude=12.123),
+                                          dict(longitude=12.123, latitude=12.123)]
         self.game_master_1.update_lobby(lobby_name,
                                         game_zone_coordinates=game_zone_coordinates)
 
@@ -74,6 +74,24 @@ class TestGameMaster(TestWithMockAWSServices):
         self.game_master_1.create_lobby(lobby_name, size=lobby_size, squad_size=squad_size)
         self.player_1.add_member_to_squad(self.squad_1, self.player_2)
         self.game_master_1.add_squad_to_lobby(lobby_name, self.squad_1)
+
+        # update lobby settings
+        game_zone_coordinates = [dict(longitude='1.12', latitude='12'),
+                                 dict(longitude='4', latitude='12'),
+                                 dict(longitude='4', latitude='12'),
+                                 dict(longitude='12.51', latitude='12.12')]
+        circle_centre = {'longitude': 1.123, 'latitude': 2.234}
+        circle_radius = 30
+        event, context = make_api_gateway_event(calling_user=self.game_master_1,
+                                                path_params={'lobby': lobby_name},
+                                                body={
+                                                    'game_zone_coordinates': game_zone_coordinates,
+                                                    'final_circle': {
+                                                        'centre': circle_centre,
+                                                        'radius': circle_radius
+                                                    }
+                                                })
+        update_lobby_handler(event, context)
 
         event, context = make_api_gateway_event(calling_user=self.game_master_1,
                                                 body={'name': lobby_name})
@@ -226,14 +244,14 @@ class TestGameMaster(TestWithMockAWSServices):
         # update lobby settings
         new_lobby_size = 15
         new_squad_size = 4
-        game_zone_coordinates = dict(c1=dict(longitude='1.12', latitude='12'),
-                                     c2=dict(longitude='4', latitude='12'),
-                                     c3=dict(longitude='4', latitude='12'),
-                                     c4=dict(longitude='12.51', latitude='12.12'))
-        game_zone_coordinates_as_float = dict(c1=dict(longitude=1.12, latitude=12),
-                                              c2=dict(longitude=4, latitude=12),
-                                              c3=dict(longitude=4, latitude=12),
-                                              c4=dict(longitude=12.51, latitude=12.12))
+        game_zone_coordinates = [dict(longitude='1.12', latitude='12'),
+                                 dict(longitude='4', latitude='12'),
+                                 dict(longitude='4', latitude='12'),
+                                 dict(longitude='12.51', latitude='12.12')]
+        game_zone_coordinates_as_float = [dict(longitude=1.12, latitude=12),
+                                          dict(longitude=4, latitude=12),
+                                          dict(longitude=4, latitude=12),
+                                          dict(longitude=12.51, latitude=12.12)]
         circle_centre = {'longitude': 1.123, 'latitude': 2.234}
         circle_radius = 30
         event, context = make_api_gateway_event(calling_user=self.game_master_1,
@@ -262,12 +280,10 @@ class TestGameMaster(TestWithMockAWSServices):
         lobby.add_squad(self.squad_2)
         lobby.add_squad(self.squad_3)
 
-        game_zone_coordinates = dict(
-            c1=dict(latitude="56.132501", longitude="12.903200"),
-            c2=dict(latitude="56.132757", longitude="12.897164"),
-            c3=dict(latitude="56.130781", longitude="12.896993"),
-            c4=dict(latitude="56.130309", longitude="12.902884")
-        )
+        game_zone_coordinates = [dict(latitude="56.132501", longitude="12.903200"),
+                                 dict(latitude="56.132757", longitude="12.897164"),
+                                 dict(latitude="56.130781", longitude="12.896993"),
+                                 dict(latitude="56.130309", longitude="12.902884")]
 
         lobby = self.game_master_1.update_lobby(lobby_name,
                                                 game_zone_coordinates=game_zone_coordinates)

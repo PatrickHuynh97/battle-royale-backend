@@ -99,7 +99,7 @@ class Squad:
         Get all members belonging to the squad and save to object
         :return: Members belonging to the squad
         """
-
+        self.members = []
         response = self.table.query(
             IndexName='lsi',
             Select='ALL_ATTRIBUTES',

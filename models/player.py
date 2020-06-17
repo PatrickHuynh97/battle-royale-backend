@@ -157,7 +157,7 @@ class Player(user.User):
 
     def remove_member_from_squad(self, squad, member_to_remove):
         """
-        Remove a member from a squad owned by Player
+        Remove a member from a squad. If squad is owned by Player, other players other than Self can be removed too.
         :param squad: squad to remove member from
         :param member_to_remove: member to be removed
         :return: None
@@ -165,27 +165,14 @@ class Player(user.User):
         if squad.in_lobby():
             raise SquadInLobbyException("Squad cannot be edited whilst in a Lobby")
 
-        # cannot remove members from squads Player does not own
-        if squad.owner.username != self.username:
-            raise PlayerDoesNotOwnSquadException("User does not own squad with name {}".format(squad.name))
-
         if member_to_remove == squad.owner:
             raise PlayerOwnsSquadException("Owner cannot be removed from the squad")
 
+        # if Player does not own the squad, they can only remove themselves from it
+        if squad.owner.username != self.username and member_to_remove != self:
+            raise PlayerDoesNotOwnSquadException("User does not own squad with name {}".format(squad.name))
+
         squad.remove_member(member_to_remove)
-
-    def leave_squad(self, squad):
-        """
-        Remove Player from a squad that they do not own
-        :param squad: Squad to remove Player from
-        :return: None
-        """
-        squad.get()
-        squad.get_members()
-        if squad.owner == self:
-            raise PlayerOwnsSquadException("User cannot leave a squad they own")
-
-        squad.remove_member(self)
 
     def get_owned_squads(self):
         """
