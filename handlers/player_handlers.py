@@ -101,7 +101,7 @@ def get_owned_squads_handler(event, context):
 
     return [dict(name=squad.name,
                  owner=squad.owner.username,
-                 members=[dict(username=member.username) for member in squad.members]) for squad in squads]
+                 members=[member.username for member in squad.members]) for squad in squads]
 
 
 @endpoint(response_schema=SquadSchema)
@@ -117,7 +117,7 @@ def get_not_owned_squads_handler(event, context):
 
     return [dict(name=squad.name,
                  owner=squad.owner.username,
-                 members=[dict(username=member.username) for member in squad.members]) for squad in squads]
+                 members=[member.username for member in squad.members]) for squad in squads]
 
 
 @endpoint(response_schema=SquadSchema)
@@ -133,7 +133,7 @@ def get_squads_handler(event, context):
 
     return [dict(name=squad.name,
                  owner=squad.owner.username,
-                 members=[dict(username=member.username) for member in squad.members]) for squad in squads]
+                 members=[member.username for member in squad.members]) for squad in squads]
 
 
 @endpoint(response_schema=LobbySchema)
@@ -160,8 +160,7 @@ def get_current_lobby_handler(event, context):
             'next_circle': lobby.game_zone.next_circle,
             'squads': [dict(name=squad.name,
                             owner=squad.owner.username,
-                            members=[dict(username=member.username)
-                                     for member in squad.members])
+                            members=[member.username for member in squad.members])
                        for squad in lobby.squads]
         }
 

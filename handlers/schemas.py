@@ -1,14 +1,10 @@
-from marshmallow import Schema, fields
-
-
-class UserSchema(Schema):
-    username = fields.String(required=True)
+from marshmallow import Schema, fields, validate
 
 
 class SquadSchema(Schema):
     name = fields.String(required=True)
     owner = fields.String(required=True)
-    members = fields.Nested(UserSchema, many=True)
+    members = fields.List(fields.String(), required=True)
 
 
 class SquadListSchema(Schema):

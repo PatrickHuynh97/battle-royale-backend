@@ -141,7 +141,7 @@ removeMemberFromSquad:
           authorizerId:
             Ref: ApiGatewayAuthorizer
         documentation:
-          summary: "Remove a Player from a squad owned by calling user"
+          summary: "Remove a Player from a squad. If said squad is owned by calling user, they can remove other members"
           tags:
             - "Player Endpoints"
           methodResponses:

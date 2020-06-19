@@ -89,7 +89,8 @@
       members:
         type: array
         items:
-          $ref: "{{model: UsernameSchema}}"
+          type: string
+
 
 -
   name: GameMasterLobbyRequest
@@ -265,7 +266,7 @@
       members:
         type: array
         items:
-          $ref: "{{model: UsernameSchema}}"
+          type: string
 
 -
   name: GetSquadsResponse
@@ -276,7 +277,6 @@
       $ref: "{{model: SquadSchema}}"
 
 # TEST FUNCTIONS
-
 -
   name: CreateTestPlayersAndSquadsResponse
   contentType: "application/json"
