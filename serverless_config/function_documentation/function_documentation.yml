@@ -91,7 +91,6 @@
         items:
           type: string
 
-
 -
   name: GameMasterLobbyRequest
   contentType: "application/json"

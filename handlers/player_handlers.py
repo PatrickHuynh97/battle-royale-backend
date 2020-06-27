@@ -48,7 +48,7 @@ def get_squad_handler(event, context):
     return dict(
         name=squad.name,
         owner=squad.owner.username,
-        members=[dict(username=member.username) for member in squad.members]
+        members=[member.username for member in squad.members]
     )
 
 
