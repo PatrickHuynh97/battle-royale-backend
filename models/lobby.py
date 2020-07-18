@@ -4,9 +4,8 @@ from db.dynamodb_connector import DynamoDbConnector
 from exceptions import LobbyDoesNotExistException, SquadInLobbyException, SquadNotInLobbyException, \
     SquadTooBigException, LobbyFullException, LobbyAlreadyStartedException, NotEnoughSquadsException, \
     PlayerAlreadyInLobbyException, LobbyNotStartedException, PlayerNotInLobbyException
-from models import game_master
 from enums import LobbyState, PlayerState
-from models import squad as squad_model
+from models import squad as squad_model, game_master
 from models import map
 from websockets import connection_manager
 import pytz
@@ -17,7 +16,7 @@ class Lobby:
     Lobby objects stores information about a game
     """
 
-    def __init__(self, name, owner):
+    def __init__(self, name: str, owner):
         self.name = name
         self.owner = owner
         self.unique_id = None
@@ -161,21 +160,21 @@ class Lobby:
             self.squad_size = squad_size
         if current_circle:
             if isinstance(current_circle, map.Circle):
-                attributes_to_update['current-circle'] = dict(Value=current_circle.to_dict())
+                attributes_to_update['current-circle'] = dict(Value=current_circle.to_string_dict())
             else:
-                attributes_to_update['current-circle'] = dict(Value=map.Circle(current_circle).to_dict())
+                attributes_to_update['current-circle'] = dict(Value=map.Circle(current_circle).to_string_dict())
                 current_circle = map.Circle(current_circle)
         if next_circle:
             if isinstance(next_circle, map.Circle):
-                attributes_to_update['next-circle'] = dict(Value=next_circle.to_dict())
+                attributes_to_update['next-circle'] = dict(Value=next_circle.to_string_dict())
             else:
-                attributes_to_update['next-circle'] = dict(Value=map.Circle(next_circle).to_dict())
+                attributes_to_update['next-circle'] = dict(Value=map.Circle(next_circle).to_string_dict())
                 next_circle = map.Circle(next_circle)
         if final_circle:
             if isinstance(final_circle, map.Circle):
-                attributes_to_update['final-circle'] = dict(Value=final_circle.to_dict())
+                attributes_to_update['final-circle'] = dict(Value=final_circle.to_string_dict())
             else:
-                attributes_to_update['final-circle'] = dict(Value=map.Circle(final_circle).to_dict())
+                attributes_to_update['final-circle'] = dict(Value=map.Circle(final_circle).to_string_dict())
                 final_circle = map.Circle(final_circle)
         if game_zone_coordinates:
             attributes_to_update['game-zone-coordinates'] = dict(
@@ -232,7 +231,7 @@ class Lobby:
             self.get()
 
         if self.state == LobbyState.FINISHED:
-            raise LobbyNotStartedException("Game has not been started")
+            raise LobbyNotStartedException("Game is already finished")
 
         self.table.update_item(
             Key={

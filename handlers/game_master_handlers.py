@@ -85,7 +85,6 @@ def remove_squad_from_lobby_handler(event, context):
 
 @endpoint(response_schema=LobbyPlayerListSchema)
 def get_players_in_lobby_handler(event, context):
-
     """
     Handler for getting every player in the Lobby and their current state
     """
@@ -120,9 +119,11 @@ def start_lobby_handler(event, context):
     Handler for starting the lobby
     """
     username = event['calling_user']
-    lobby_name = event['pathParameters']['lobby']
+    lobby_name = event['pathParameters']['lobby']  # todo consider removing this from each endpoint
 
-    GameMaster(username).start_game(lobby_name)
+    game_master = GameMaster(username)
+    game_master.get()
+    game_master.start_game()
 
 
 @endpoint()
@@ -131,6 +132,9 @@ def end_lobby_handler(event, context):
     Handler for ending the lobby
     """
     username = event['calling_user']
-    lobby_name = event['pathParameters']['lobby']
+    lobby_name = event['pathParameters']['lobby']  # todo as above
 
-    GameMaster(username).end_game(lobby_name)
+    game_master = GameMaster(username)
+    game_master.get()
+
+    game_master.end_game()

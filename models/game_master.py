@@ -212,8 +212,8 @@ class GameMaster(user.User):
         lobby.get_squads()
         return lobby.squads
 
-    def start_game(self, lobby_name):
-        lobby = lobby_model.Lobby(lobby_name, self)
+    def start_game(self):
+        lobby = lobby_model.Lobby(self.lobby.name, self)
         lobby.get()
         lobby.get_squads()
         lobby.start()
@@ -224,12 +224,12 @@ class GameMaster(user.User):
         circle_queue = CircleQueue()
         circle_queue.send_first_circle_event(lobby)
 
-    def end_game(self, lobby_name):
-        lobby = lobby_model.Lobby(lobby_name, self)
-        lobby.get()
-        lobby.end()
+    def end_game(self):
 
-        connection_manager.ConnectionManager().push_game_state(lobby)
+        self.lobby.get()
+        self.lobby.end()
+
+        connection_manager.ConnectionManager().push_game_state(self.lobby)
 
     def get_players_in_lobby(self, lobby_name):
         """

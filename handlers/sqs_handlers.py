@@ -17,7 +17,7 @@ def circle_queue_handler(event, context):
 
     if event_type == SQSEventType.FIRST_CIRCLE:
         _handle_first_circle(lobby)
-    if event_type == SQSEventType.CLOSE_CIRCLE:
+    elif event_type == SQSEventType.CLOSE_CIRCLE:
         _handle_close_circle(lobby)
 
 
@@ -32,8 +32,7 @@ def _handle_first_circle(lobby: Lobby):
     connection_manager = ConnectionManager()
     connection_manager.push_next_circle(lobby)
 
-    circle_queue = CircleQueue()
-    circle_queue.send_close_circle_event(lobby)
+    CircleQueue().send_close_circle_event(lobby)
 
 
 def _handle_close_circle(lobby: Lobby):
@@ -48,5 +47,4 @@ def _handle_close_circle(lobby: Lobby):
     connection_manager.push_next_circle(lobby)
 
     # enqueue SQS message to close the next_circle after a certain amount of time
-    circle_queue = CircleQueue()
-    circle_queue.send_close_circle_event(lobby)
+    CircleQueue().send_close_circle_event(lobby)

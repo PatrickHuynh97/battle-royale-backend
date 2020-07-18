@@ -78,7 +78,7 @@ class TestWebsocketHandlers(TestWithMockAWSServices):
 
         # authorize above user as a game master in happy flow
         with mock.patch("sqs.closing_circle_queue.CircleQueue.send_first_circle_event"):
-            self.gamemaster_1.start_game(self.lobby.name)
+            self.gamemaster_1.start_game()
         event = self.create_fake_websocket_event(connection_id,
                                                  body={'access_token': '123456'})
         with mock.patch('jwt.verify_token', return_value={'username': self.gamemaster_1.username}):
@@ -110,7 +110,7 @@ class TestWebsocketHandlers(TestWithMockAWSServices):
 
         # authorize above user as a game master in happy flow
         with mock.patch("sqs.closing_circle_queue.CircleQueue.send_first_circle_event"):
-            self.gamemaster_1.start_game(self.lobby.name)  # game must be started to join a websocket game session
+            self.gamemaster_1.start_game()  # game must be started to join a websocket game session
         event = self.create_fake_websocket_event(first_connection_id,
                                                  body={'access_token': '123456'})
         with mock.patch('jwt.verify_token', return_value={'username': self.gamemaster_1.username}):
@@ -164,7 +164,7 @@ class TestWebsocketHandlers(TestWithMockAWSServices):
 
     def test_connection_handler_lobby_connect(self):
         with mock.patch("sqs.closing_circle_queue.CircleQueue.send_first_circle_event"):
-            self.gamemaster_1.start_game(self.lobby.name)
+            self.gamemaster_1.start_game()
 
         # connect to the lobby as gamemaster
         gm_connection_id = '123456'
@@ -184,7 +184,7 @@ class TestWebsocketHandlers(TestWithMockAWSServices):
 
     def test_get_connections(self):
         with mock.patch("sqs.closing_circle_queue.CircleQueue.send_first_circle_event"):
-            self.gamemaster_1.start_game(self.lobby.name)
+            self.gamemaster_1.start_game()
 
         connections = ConnectionManager().get_player_connections(self.lobby)
 
@@ -213,7 +213,7 @@ class TestWebsocketHandlers(TestWithMockAWSServices):
 
     def test_get_test_player_and_gamemaster_connections(self):
         with mock.patch("sqs.closing_circle_queue.CircleQueue.send_first_circle_event"):
-            self.gamemaster_1.start_game(self.lobby.name)
+            self.gamemaster_1.start_game()
 
         # connect two players and gamemaster_1 to the lobby
         p_1_connection_id = '123456'
@@ -252,8 +252,7 @@ class TestWebsocketHandlers(TestWithMockAWSServices):
         self.gamemaster_2.add_squad_to_lobby(new_lobby.name, new_squad_1)
         self.gamemaster_2.add_squad_to_lobby(new_lobby.name, new_squad_2)
         with mock.patch("sqs.closing_circle_queue.CircleQueue.send_first_circle_event"):
-            self.gamemaster_2.start_game(new_lobby.name)
-
+            self.gamemaster_2.start_game()
         # connect players in second lobby to websocket
         new_p_1_connection_id, new_p_2_connection_id, new_p_3_connection_id, new_gm_connection_id = \
             '987', '231', '123', '091'
@@ -294,7 +293,7 @@ class TestWebsocketHandlers(TestWithMockAWSServices):
 
     def test_connection_handler_lobby_disconnect(self):
         with mock.patch("sqs.closing_circle_queue.CircleQueue.send_first_circle_event"):
-            self.gamemaster_1.start_game(self.lobby.name)
+            self.gamemaster_1.start_game()
 
         # connect two players to the lobby
         p_1_connection_id = '123456'
@@ -321,7 +320,7 @@ class TestWebsocketHandlers(TestWithMockAWSServices):
     def test_location_websocket_message(self):
         # start lobby, connect two player who are in the same squad, one other player, and the game master
         with mock.patch("sqs.closing_circle_queue.CircleQueue.send_first_circle_event"):
-            self.gamemaster_1.start_game(self.lobby.name)
+            self.gamemaster_1.start_game()
 
         p_1_connection_id = '123456'
         p_2_connection_id = '512512'
@@ -373,7 +372,7 @@ class TestWebsocketHandlers(TestWithMockAWSServices):
     def test_gamemaster_websocket_message(self):
         # start lobby, connect two player who are in the same squad, one other player, and the game master
         with mock.patch("sqs.closing_circle_queue.CircleQueue.send_first_circle_event"):
-            self.gamemaster_1.start_game(self.lobby.name)
+            self.gamemaster_1.start_game()
 
         p_1_connection_id = '123456'
         p_2_connection_id = '512512'

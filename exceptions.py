@@ -202,3 +202,14 @@ class LiveDataConnectionException(WebSocketException):
 
 class WebSocketDisconnectedException(WebSocketException):
     pass
+
+
+# exceptions for Tests
+class TestException(ApiException):
+    tag = "TestException"
+    error_code = 500
+
+
+class SetupError(TestException):
+    tag = __qualname__
+    error_code = 400

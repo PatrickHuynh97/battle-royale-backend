@@ -74,6 +74,7 @@ getSquad:
           type: COGNITO_USER_POOLS
           authorizerId:
             Ref: ApiGatewayAuthorizer
+
         documentation:
           summary: "Get a squad"
           tags:

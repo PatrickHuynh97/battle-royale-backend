@@ -4,10 +4,6 @@ createTestPlayersAndSquads:
     - http:
         path: /test/create-players-and-squads
         method: post
-        authorizer:
-          type: COGNITO_USER_POOLS
-          authorizerId:
-            Ref: ApiGatewayAuthorizer
         documentation:
           summary: "Create 9 test players and 3 test squads, each of which contains 3 of said created test players"
           tags:
@@ -28,15 +24,11 @@ createTestPlayersAndSquads:
 
 
 deleteTestPlayersAndSquads:
-  handler: handlers.test_handlers.create_test_players_and_squads_handler
+  handler: handlers.test_handlers.delete_test_players_and_squads_handler
   events:
     - http:
         path: /test/create-players-and-squads
         method: delete
-        authorizer:
-          type: COGNITO_USER_POOLS
-          authorizerId:
-            Ref: ApiGatewayAuthorizer
         documentation:
           summary: "Deletes all test players and their squads where username begins with test_player_"
           tags:
@@ -64,10 +56,6 @@ createTestLobbyAndSquads:
           parameters:
             paths:
               squadname: true
-        authorizer:
-          type: COGNITO_USER_POOLS
-          authorizerId:
-            Ref: ApiGatewayAuthorizer
         documentation:
           summary: "Create 9 test players and 3 test squads. Insert them into a lobby with a squad defined in the path"
           tags:
@@ -93,12 +81,71 @@ deleteTestLobbyAndSquads:
     - http:
         path: /test/create-lobby-and-squads
         method: delete
-        authorizer:
-          type: COGNITO_USER_POOLS
-          authorizerId:
-            Ref: ApiGatewayAuthorizer
         documentation:
           summary: "Deletes all test players and squads created by the create-lobby-and-squads test function"
+          tags:
+            - "Test Endpoints"
+          methodResponses:
+            - statusCode: "200"
+              responseBody:
+                description: "None"
+  environment:
+    USER_POOL_CLIENT_ID:
+      Ref: CognitoUserPoolClient
+    USER_POOL_ID:
+      Ref: CognitoUserPool
+    TABLE:
+      Fn::GetAtt: [BattleRoyaleTable, Arn]
+
+
+startTestLobby:
+  handler: handlers.test_handlers.start_test_lobby
+  events:
+    - http:
+        path: /test/start-test-lobby/{squadname}
+        method: post
+        request:
+          parameters:
+            paths:
+              squadname: true
+        documentation:
+          summary: "Starts a lobby created that squadname in path is currently in. createTestLobbyAndSquads should be
+          called before this endpoint. This endpoint will trigger a websocket message to be sent to all those connected
+          which is a json/dictionary with key 'event_type' and key 'value'. The 'event_type' dictates what you will get
+          in the 'value'. In this case, event_type will be 'game_state' and value will be 'started')"
+          tags:
+            - "Test Endpoints"
+          methodResponses:
+            - statusCode: "200"
+              responseBody:
+                description: "None"
+  environment:
+    USER_POOL_CLIENT_ID:
+      Ref: CognitoUserPoolClient
+    USER_POOL_ID:
+      Ref: CognitoUserPool
+    TABLE:
+      Fn::GetAtt: [BattleRoyaleTable, Arn]
+
+
+makeTestLobbyEvent:
+  handler: handlers.test_handlers.make_test_lobby_event
+  events:
+    - http:
+        path: /test/test-lobby-event/{squadname}
+        method: post
+        request:
+          parameters:
+            paths:
+              squadname: true
+        documentation:
+          summary: "Given a squad which is in a started lobby, trigger an in-game event. Possible event types are
+          'kill_player', 'generate_first_circle', 'close_to_next_circle' and 'end_game'. Each of these events triggers
+          websocket messages to be sent to certain connected players. The body of a request to this endpoint is a
+          dict/JSON with two keys, 'event_type' and 'value'. event_type refers to one of the possible events above,
+          and value may or may not be required depending on the event_type given. value is only required for the
+          'kill_player', and should be the name of the player you want to kill. Note that generate_first_circle must
+          be called before 'close_to_next_circle' can be called."
           tags:
             - "Test Endpoints"
           methodResponses:

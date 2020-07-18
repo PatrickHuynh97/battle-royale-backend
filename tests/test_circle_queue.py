@@ -32,7 +32,7 @@ class TestCircleQueue(TestWithMockAWSServices):
         # start and end game
         mock_circle_queue = MockQueue()
         with mock.patch('sqs.utils.SqsQueue.send_message', side_effect=mock_circle_queue.send_message):
-            self.game_master_1.start_game(lobby.name)
+            self.game_master_1.start_game()
 
         self.assertTrue(mock_circle_queue.records)
         record = json.loads(mock_circle_queue.records[0]['body'])
@@ -40,7 +40,7 @@ class TestCircleQueue(TestWithMockAWSServices):
         self.assertEqual(lobby.name, record['lobby_name'])
         self.assertEqual(lobby.owner.username, record['lobby_owner'])
 
-        self.game_master_1.end_game(lobby.name)
+        self.game_master_1.end_game()
 
     def test_sqs_handler_first_circle_event(self):
         lobby = self.set_up_lobby()
@@ -48,7 +48,7 @@ class TestCircleQueue(TestWithMockAWSServices):
         # start game and get SQS event that would have been queued
         mock_circle_queue = MockQueue()
         with mock.patch('sqs.utils.SqsQueue.send_message', side_effect=mock_circle_queue.send_message):
-            self.game_master_1.start_game(lobby.name)
+            self.game_master_1.start_game()
         self.assertTrue(mock_circle_queue.records)
         sqs_events = make_sqs_events([json.loads(record['body']) for record in mock_circle_queue.records])
 
@@ -76,7 +76,7 @@ class TestCircleQueue(TestWithMockAWSServices):
         # start game, generate first circle as it would be normally, and get SQS event of closing of first circle
         mock_circle_queue = MockQueue()
         with mock.patch('sqs.utils.SqsQueue.send_message', side_effect=mock_circle_queue.send_message):
-            self.game_master_1.start_game(lobby.name)
+            self.game_master_1.start_game()
         sqs_events = make_sqs_events([json.loads(record['body']) for record in mock_circle_queue.records])
 
         # new mock queue for closing of first circle event

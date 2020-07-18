@@ -420,7 +420,7 @@ class TestPlayer(TestWithMockAWSServices):
 
         # start game, kill player
         with mock.patch("sqs.closing_circle_queue.CircleQueue.send_first_circle_event"):
-            gamemaster.start_game(lobby_name)
+            gamemaster.start_game()
         self.player_1.dead()
 
         state = self.player_1.get_current_state()
@@ -448,7 +448,7 @@ class TestPlayer(TestWithMockAWSServices):
 
         # start game, mark player_1 as dead through handler
         with mock.patch("sqs.closing_circle_queue.CircleQueue.send_first_circle_event"):
-            gamemaster.start_game(lobby.name)
+            gamemaster.start_game()
         event, context = make_api_gateway_event(calling_user=self.player_1)
         set_dead_handler(event, context)
         self.player_1.dead()

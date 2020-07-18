@@ -55,3 +55,8 @@ class CreateLobbyRequestSchema(Schema):
     name = fields.String(required=True)
     lobby_size = fields.Integer(required=True)
     squad_size = fields.Integer(required=True)
+
+
+class TestLobbyEventRequestSchema(Schema):
+    event_type = fields.String(required=True)
+    value = fields.String(allow_none=True, required=False)

@@ -1,4 +1,3 @@
-import json
 from configuration import Configuration
 from enums import SQSEventType
 from sqs.utils import SqsQueue

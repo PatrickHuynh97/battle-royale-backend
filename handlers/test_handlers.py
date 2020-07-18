@@ -3,13 +3,17 @@ from random import randint
 from boto3.dynamodb.conditions import Attr
 
 from db.dynamodb_connector import DynamoDbConnector
+from enums import TestLobbyEventType
+from exceptions import SetupError
 from handlers.lambda_helpers import endpoint
-from handlers.schemas import SquadSchema
+from handlers.schemas import SquadSchema, LobbySchema, TestLobbyEventRequestSchema
+from handlers.sqs_handlers import _handle_first_circle, _handle_close_circle
 from models.game_master import GameMaster
+from models.lobby import Lobby
 from models.map import Circle
 from models.player import Player
 from models.squad import Squad
-from helper_functions import create_test_players, create_test_squads, create_test_game_masters
+from helper_functions import create_test_players, create_test_squads, create_test_game_masters, make_sqs_events
 
 
 @endpoint(response_schema=SquadSchema)
@@ -46,7 +50,7 @@ def delete_test_players_and_squads_handler(event, context):
     _delete_test_players()
 
 
-@endpoint()
+@endpoint(response_schema=LobbySchema)
 def create_test_lobby_and_squads_handler(event, context):
     """
     Handler for creating a test lobby which has a few squads in it, and the calling user with a specified squads in it.
@@ -98,8 +102,7 @@ def create_test_lobby_and_squads_handler(event, context):
         'next_circle': lobby.game_zone.next_circle,
         'squads': [dict(name=squad.name,
                         owner=squad.owner.username,
-                        members=[dict(username=member.username)
-                                 for member in squad.members])
+                        members=[member.username for member in squad.members])
                    for squad in lobby.squads]
     }
 
@@ -112,6 +115,95 @@ def delete_test_lobby_and_squads_handler(event, context):
     _delete_test_game_masters()
 
     _delete_test_players()
+
+
+@endpoint()
+def start_test_lobby(event, context):
+    """
+    Handler for starting a test lobby which has been created through the createTestLobbyAndSquads endpoint (
+    path=/test/create-lobby-and-squads/{squadname}). Does not enqueue trigger for next circle closing. Sends websocket
+    that game started to any connected players
+    """
+    squad_name = event['pathParameters']['squadname']
+    squad = Squad(squad_name)
+    squad.get()
+
+    if not squad.lobby_name and not squad.lobby_owner:
+        raise SetupError("Test lobby must be created before running this function")
+
+    game_master = GameMaster(squad.lobby_owner)
+    game_master.get()
+    from unittest import mock
+    with mock.patch('sqs.utils.SqsQueue.send_message'):
+        game_master.start_game()
+
+
+@endpoint(request_schema=TestLobbyEventRequestSchema)
+def make_test_lobby_event(event, context):
+    """
+    Handler for making an event in a test lobby occur.
+    """
+    event_type = TestLobbyEventType(event['body'].get('event_type'))
+    value = event['body'].get('value')
+
+    if event_type == TestLobbyEventType.KILL_PLAYER:
+        """ 
+        Kills the specified player. Websocket message is sent to squad mates + game master and looks like:
+        {
+            "event_type": "player_dead",
+            "value": {"name":"username1234", "state":"dead"}
+        }
+        """
+        test_kill_player(player_to_kill=value)
+
+    elif event_type == TestLobbyEventType.GENERATE_FIRST_CIRCLE:
+        """
+        Generates the first circle as the SqsQueue would have done. Does not enqueue message to close to next circle as
+        would be done through normal flow. 
+        
+        """
+        squad_name = event['pathParameters']['squadname']
+        squad = Squad(squad_name)
+        squad.get()
+
+        lobby = Lobby(squad.lobby_name, GameMaster(squad.lobby_owner))
+        lobby.get()
+        from unittest import mock
+        with mock.patch('sqs.utils.SqsQueue.send_message'):
+            _handle_first_circle(lobby)
+
+    elif event_type == TestLobbyEventType.CLOSE_TO_NEXT_CIRCLE:
+        """
+        Closes the current circle to the next circle, as the SqsQueue message would have done. Cannot be called if
+        the given lobby does not have a "next_circle" to close to.
+        """
+        squad_name = event['pathParameters']['squadname']
+        squad = Squad(squad_name)
+        squad.get()
+
+        lobby = Lobby(squad.lobby_name, GameMaster(squad.lobby_owner))
+        lobby.get()
+
+        if not lobby.game_zone.next_circle:
+            raise SetupError("generate_first_circle event must be triggered before trying to close to a next circle")
+
+        from unittest import mock
+        with mock.patch('sqs.utils.SqsQueue.send_message'):
+            _handle_close_circle(lobby)
+
+    elif event_type == TestLobbyEventType.END_GAME:
+        squad_name = event['pathParameters']['squadname']
+        squad = Squad(squad_name)
+        squad.get()
+
+        game_master = GameMaster(squad.lobby_owner)
+        game_master.get()
+        game_master.end_game()
+
+
+def test_kill_player(player_to_kill: str):
+    player = Player(player_to_kill)
+    player.dead()
 
 
 def _delete_test_players():

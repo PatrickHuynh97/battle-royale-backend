@@ -27,11 +27,11 @@ class TestSquads(TestWithMockAWSServices):
         # create a lobby, add squad and assert they are in
         game_master = GameMaster('gm')
         lobby_name = 'test-lobby'
-        lobby = game_master.create_lobby(lobby_name, size=20)
+        game_master.create_lobby(lobby_name, size=20)
         game_master.add_squad_to_lobby(lobby_name, squad)
 
-        _lobby = self.player_1.get_current_lobby()
-        self.assertEqual(lobby, _lobby)
+        lobby = self.player_1.get_current_lobby()
+        self.assertEqual(lobby, lobby)
 
         # get fresh lobby object, make sure everything checks out
         fresh_lobby = game_master.get_lobby()

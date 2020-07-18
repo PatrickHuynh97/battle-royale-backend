@@ -1,6 +1,7 @@
 from math import cos, pi
 from geopy import distance
 import random
+import time
 
 from configuration import Configuration
 from websockets import connection_manager as cm
@@ -47,7 +48,7 @@ class Circle(MapObject):
             return self.centre == other.centre and self.radius == other.radius
         return False
 
-    def to_dict(self):
+    def to_string_dict(self):
         """
         Returns a dict representation of the data which defines a circle, namely the centre coordinates and the radius
         :return: Dict containing centre of circle and the radius
@@ -55,6 +56,16 @@ class Circle(MapObject):
         return dict(
             centre=self.coordinate_to_string(self.centre),
             radius=str(self.radius)
+        )
+
+    def to_dict(self):
+        """
+        Returns a dict representation of the data which defines a circle, namely the centre coordinates and the radius
+        :return: Dict containing centre of circle and the radius
+        """
+        return dict(
+            centre=self.coordinate_to_float(self.centre),
+            radius=self.radius
         )
 
     def contains_coordinates(self, coordinates):
@@ -102,8 +113,13 @@ class Circle(MapObject):
         #   (distance(new_circle, final_circle) + final_circle.radius) < new_circle.radius
         # lazy solution is to spam generate_centre_within_distance, and check if the above math checks out. In the
         # future we should narrow down the search space for the new circle to improve response times but it's pretty
-        # fast as is
+        # fast as is. If no solution is generated within 3 seconds, return false (https://stackoverflow.com/a/44723559)
+
+        tCurrent = time.time()
+
         while True:
+            if time.time() >= tCurrent + 2:
+                return False
             # generate a valid circle which may or may not exclude the final circle
             proposed_centre = self.generate_centre_within_distance(distance_from_centre)
             # verify if the proposed circle centre excludes the final circle or not
@@ -178,6 +194,10 @@ class Circle(MapObject):
         return CIRCLE_CONFIG['CLOSING_RATES'][last_rate]
 
 
+class CircleNotComputableException(Exception):
+    pass
+
+
 class GameZone(MapObject):
     # class representing the entire playable area and the circles within it.
     def __init__(self,
@@ -212,11 +232,16 @@ class GameZone(MapObject):
                     self.next_circle = self.final_circle
                     return
 
-                # generate a new circle which encapsulates final circle
+                # try to generate a random new circle which encapsulates final circle for 2 seconds
                 next_circle_centre = self.current_circle.generate_centre_within_distance_and_contains(
                     allowed_distance_from_current,
                     new_radius,
                     self.final_circle)
+
+                # this should not be the case, but in case we can't generate a circle just set it to the final circle
+                if not next_circle_centre:
+                    self.next_circle = self.final_circle
+
                 self.next_circle = Circle(dict(centre=next_circle_centre, radius=new_radius))
 
             # generate completely random circle within current circle
@@ -239,7 +264,9 @@ class GameZone(MapObject):
                 circle_centre = fake_circle.generate_centre_within_distance_and_contains(allowed_distance,
                                                                                          circle_radius,
                                                                                          self.final_circle)
-
+                # this should not be the case, but in case we can't generate a circle just set it to the final circle
+                if not circle_centre:
+                    self.next_circle = self.final_circle
             else:
                 circle_centre = fake_circle.generate_centre_within_distance(allowed_distance)
 
